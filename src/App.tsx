@@ -29,7 +29,7 @@ interface AgendaEvent {
   date: string;
   title: string;
   category: string;
-  // alarmsEnabled ELIMINADO DEFINITIVAMENTE
+  completed: boolean; // NUEVO: Para poder tachar eventos
 }
 
 interface TodoItem {
@@ -248,8 +248,8 @@ const MainMenu = ({ onNavigate }: { onNavigate: (view: string) => void }) => {
   );
 };
 
-// 2. VISTA DEL DÍA
-const DailyView = ({ events, onBack }: { events: AgendaEvent[], onBack: () => void }) => {
+// 2. VISTA DEL DÍA (Con opción de tachar)
+const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], onToggleEvent: (id: string) => void, onBack: () => void }) => {
   const today = getTodayStr();
   const todaysEvents = events.filter(e => isSameDate(e.date, today, e.category));
   const [dateDisplay, setDateDisplay] = useState('');
@@ -279,15 +279,24 @@ const DailyView = ({ events, onBack }: { events: AgendaEvent[], onBack: () => vo
           todaysEvents.map(event => {
             const cat = CATEGORIES.find(c => c.id === event.category);
             return (
-              <div key={event.id} className="w-full bg-slate-800 p-5 rounded-2xl border-l-4 border-cyan-500 shadow-lg flex justify-between items-start animate-slide-up">
+              <button 
+                key={event.id} 
+                onClick={() => onToggleEvent(event.id)}
+                className={`w-full text-left bg-slate-800 p-5 rounded-2xl border-l-4 shadow-lg flex justify-between items-start animate-slide-up transition-all active:scale-95
+                  ${event.completed ? 'opacity-50 border-slate-600 bg-slate-800/50' : 'border-cyan-500'}
+                `}
+              >
                 <div className="w-full">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`text-xs px-2 py-1 rounded-md text-white font-medium flex items-center gap-1 ${cat?.color || 'bg-slate-600'}`}>{cat?.icon} {cat?.label || 'General'}</span>
                   </div>
-                  <h3 className="text-xl font-bold text-white break-words w-full">{event.title}</h3>
+                  <h3 className={`text-xl font-bold text-white break-words w-full ${event.completed ? 'line-through text-slate-400' : ''}`}>
+                    {event.title}
+                  </h3>
                   {event.category === 'cumpleaños' && <p className="text-xs text-pink-400 mt-1">🎂 Se repite cada año</p>}
                 </div>
-              </div>
+                {event.completed && <CheckSquare className="text-cyan-500" />}
+              </button>
             );
           })
         )}
@@ -296,8 +305,8 @@ const DailyView = ({ events, onBack }: { events: AgendaEvent[], onBack: () => vo
   );
 };
 
-// 3. AGENDAR
-const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[], onSaveEvent: (e: AgendaEvent) => void, onBack: () => void }) => {
+// 3. AGENDAR (Almanaque optimizado y borrar eventos)
+const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events: AgendaEvent[], onSaveEvent: (e: AgendaEvent) => void, onDeleteEvent: (id: string) => void, onBack: () => void }) => {
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('trabajo');
@@ -327,8 +336,7 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
   };
   const handleSave = () => {
     if(!title) return;
-    // CORRECCIÓN: Eliminada la propiedad alarmsEnabled del objeto
-    const newEvent: AgendaEvent = { id: Date.now().toString(), date: selectedDate, title, category };
+    const newEvent: AgendaEvent = { id: Date.now().toString(), date: selectedDate, title, category, completed: false };
     onSaveEvent(newEvent);
     setViewState('calendar');
     setTitle('');
@@ -336,21 +344,26 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
-    <div className="min-h-screen bg-dark-900 p-4 flex flex-col">
-      <div className="flex items-center gap-4 mb-4">
+    <div className="min-h-screen bg-dark-900 p-2 flex flex-col"> {/* Padding muy reducido (p-2) para maximizar espacio */}
+      <div className="flex items-center gap-4 mb-4 px-2 mt-2">
         <button onClick={viewState === 'form' ? () => setViewState('calendar') : onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
-        <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles del Evento'}</h2>
+        <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles'}</h2>
       </div>
+      
       {viewState === 'calendar' ? (
-        <div className="flex-1 bg-slate-800 rounded-3xl p-2 shadow-xl animate-fade-in flex flex-col w-full">
-          <div className="flex justify-between items-center mb-4 px-2 pt-2">
+        <div className="flex-1 bg-slate-800 rounded-3xl shadow-xl animate-fade-in flex flex-col w-full overflow-hidden">
+          <div className="flex justify-between items-center p-4 bg-slate-900/50">
             <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
             <h3 className="text-2xl font-bold capitalize">{monthName} {year}</h3>
             <button onClick={() => changeMonth(1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
           </div>
-          <div className="grid grid-cols-7 gap-1 text-center mb-2 text-slate-400 text-lg font-medium"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
-          <div className="grid grid-cols-7 gap-1 flex-1 auto-rows-fr">
-            {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} />)}
+          
+          <div className="grid grid-cols-7 text-center py-2 bg-slate-900/30 text-slate-400 text-lg font-medium border-b border-slate-700">
+            <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+          </div>
+          
+          <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-slate-800">
+            {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} className="border-r border-b border-slate-700/50" />)}
             {Array.from({ length: days }).map((_, i) => {
               const day = i + 1;
               const checkM = (currentMonth.getMonth() + 1).toString().padStart(2, '0');
@@ -359,7 +372,13 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
               const isSelected = fullDate === selectedDate;
               const hasEvents = events.some(e => isSameDate(e.date, fullDate, e.category));
               return (
-                <button key={day} onClick={() => handleDaySelect(day)} className={`w-full h-full rounded-xl flex flex-col items-center justify-center font-bold text-xl transition-all relative ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-slate-900 hover:bg-slate-700 text-slate-300'}`}>
+                <button 
+                  key={day} 
+                  onClick={() => handleDaySelect(day)} 
+                  className={`flex flex-col items-center justify-center font-bold text-xl transition-all relative border-r border-b border-slate-700/50
+                    ${isSelected ? 'bg-cyan-500 text-white z-10' : 'hover:bg-slate-700 text-slate-300'}
+                  `}
+                >
                   <span>{day}</span>
                   {hasEvents && !isSelected && <div className="w-2 h-2 bg-cyan-400 rounded-full mt-1"></div>}
                   {hasEvents && isSelected && <div className="w-2 h-2 bg-white rounded-full mt-1"></div>}
@@ -369,16 +388,40 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
           </div>
         </div>
       ) : (
-        <div className="animate-slide-up space-y-6">
-          <div className="bg-slate-800/50 p-4 rounded-3xl border border-slate-700/50">
+        <div className="animate-slide-up space-y-6 px-2">
+          {/* LISTA DE EVENTOS CON BOTÓN DE BORRAR */}
+          <div className="bg-slate-800 p-4 rounded-3xl border border-slate-700">
             <h4 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Ya agendado para hoy:</h4>
-            {eventsOnSelectedDate.length === 0 ? <p className="text-sm text-slate-500 italic">Nada por ahora.</p> : <div className="space-y-2">{eventsOnSelectedDate.map(e => { const cat = CATEGORIES.find(c => c.id === e.category); return (<div key={e.id} className="flex items-center gap-3 bg-slate-900 p-2 rounded-xl border border-slate-700/50"><div className={`w-2 h-2 rounded-full ${cat?.color}`}></div><span className="text-sm text-white">{e.title}</span>{e.category === 'cumpleaños' && <span className="text-xs">🎂</span>}</div>); })}</div>}
+            {eventsOnSelectedDate.length === 0 ? (
+              <p className="text-sm text-slate-500 italic">Nada por ahora.</p> 
+            ) : (
+              <div className="space-y-2">
+                {eventsOnSelectedDate.map(e => { 
+                  const cat = CATEGORIES.find(c => c.id === e.category); 
+                  return (
+                    <div key={e.id} className="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700/50">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cat?.color}`}></div>
+                        <span className={`text-sm text-white truncate ${e.completed ? 'line-through text-slate-500' : ''}`}>{e.title}</span>
+                        {e.category === 'cumpleaños' && <span className="text-xs">🎂</span>}
+                      </div>
+                      <button 
+                        onClick={() => { if(confirm('¿Borrar este evento?')) onDeleteEvent(e.id) }}
+                        className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ); 
+                })}
+              </div>
+            )}
           </div>
+
           <div className="bg-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Fecha</label><div className="text-xl font-bold text-white mt-1">{selectedDate}</div></div>
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">¿Qué vamos a hacer?</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej. Tarea importante..." className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mt-2 text-white focus:ring-2 focus:ring-cyan-500 outline-none" /></div>
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Categoría</label><div className="grid grid-cols-3 gap-2 mt-2">{CATEGORIES.map(cat => (<button key={cat.id} onClick={() => setCategory(cat.id)} className={`p-3 rounded-xl flex flex-col items-center gap-2 border transition-all ${category === cat.id ? 'border-cyan-500 bg-cyan-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-400'}`}><div className={`${category === cat.id ? 'text-cyan-400' : ''}`}>{cat.icon}</div><span className="text-xs">{cat.label}</span></button>))}</div></div>
-            {/* Alarm UI Removed */}
             <button onClick={handleSave} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"><Save size={20} /> Guardar Evento</button>
           </div>
         </div>
@@ -691,6 +734,9 @@ export default function App() {
   useEffect(() => { localStorage.setItem('agenda_ed_goals', JSON.stringify(goals)); }, [goals]);
 
   const handleSaveEvent = (newEvent: AgendaEvent) => setEvents([...events, newEvent]);
+  const handleDeleteEvent = (id: string) => setEvents(events.filter(e => e.id !== id));
+  const handleToggleEvent = (id: string) => setEvents(events.map(e => e.id === id ? { ...e, completed: !e.completed } : e));
+
   const handleSaveNote = (updatedNote: StickyNote) => { const exists = notes.find(n => n.id === updatedNote.id); if (exists) setNotes(notes.map(n => n.id === updatedNote.id ? updatedNote : n)); else setNotes([...notes, updatedNote]); };
   const handleDeleteNote = (id: string) => setNotes(notes.filter(n => n.id !== id));
   const handleSaveGoal = (newGoal: Goal) => setGoals([...goals, newGoal]);
@@ -701,8 +747,8 @@ export default function App() {
     <div className="font-sans text-slate-100 bg-slate-950 min-h-screen selection:bg-brand-500/30">
       <StyleInjector />
       {view === 'home' && <MainMenu onNavigate={setView} />}
-      {view === 'today' && <DailyView events={events} onBack={() => setView('home')} />}
-      {view === 'schedule' && <SchedulerView events={events} onSaveEvent={handleSaveEvent} onBack={() => setView('home')} />}
+      {view === 'today' && <DailyView events={events} onToggleEvent={handleToggleEvent} onBack={() => setView('home')} />}
+      {view === 'schedule' && <SchedulerView events={events} onSaveEvent={handleSaveEvent} onDeleteEvent={handleDeleteEvent} onBack={() => setView('home')} />}
       {view === 'board' && <StickyBoardView notes={notes} onSaveNote={handleSaveNote} onDeleteNote={handleDeleteNote} onBack={() => setView('home')} />}
       {view === 'birthdays' && <BirthdaysView events={events} onBack={() => setView('home')} />}
       {view === 'goals' && <GoalsView goals={goals} onSaveGoal={handleSaveGoal} onUpdateGoal={handleUpdateGoal} onDeleteGoal={handleDeleteGoal} onBack={() => setView('home')} />}

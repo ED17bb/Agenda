@@ -20,16 +20,17 @@ import {
   Trophy,
   Gift,
   Download,
-  Loader2
+  Loader2,
+  LucideIcon
 } from 'lucide-react';
 
-// --- FIREBASE IMPORTS ---
-import { initializeApp, FirebaseOptions } from 'firebase/app';
+// --- FIREBASE IMPORTS CORREGIDOS ---
+import { initializeApp, type FirebaseOptions } from 'firebase/app';
 import { 
   getAuth, 
   signInAnonymously, 
   onAuthStateChanged,
-  User as FirebaseUser,
+  type User as FirebaseUser,
   signInWithCustomToken 
 } from 'firebase/auth';
 import { 
@@ -40,16 +41,16 @@ import {
   deleteDoc, 
   onSnapshot, 
   query,
-  QuerySnapshot,
-  DocumentData,
-  FirestoreError
+  type QuerySnapshot,
+  type DocumentData,
+  type FirestoreError
 } from 'firebase/firestore';
 
 // =================================================================
 // --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
 
-// 1. Define tu configuración aquí (Reemplaza con tus datos reales de la consola de Firebase)
+// 1. Define tu configuración aquí (Reemplaza con tus datos reales)
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -59,7 +60,7 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Función segura para obtener la configuración
+// 2. Función para obtener la configuración correcta
 const getFirebaseConfig = (): FirebaseOptions => {
   try {
     // @ts-ignore

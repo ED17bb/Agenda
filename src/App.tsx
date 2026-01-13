@@ -305,7 +305,7 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
   );
 };
 
-// 3. AGENDAR (NUEVO DISEÑO FLAT & FULL WIDTH)
+// 3. AGENDAR (Almanaque Cuadrado y Restaurado)
 const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events: AgendaEvent[], onSaveEvent: (e: AgendaEvent) => void, onDeleteEvent: (id: string) => void, onBack: () => void }) => {
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
@@ -344,33 +344,27 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
-    <div className="min-h-screen bg-dark-900 flex flex-col">
-      {/* Cabecera pegajosa */}
-      <div className="flex items-center gap-4 px-4 py-4 bg-dark-900 z-20">
+    <div className="min-h-screen bg-dark-900 p-4 flex flex-col">
+      <div className="flex items-center gap-4 mb-4">
         <button onClick={viewState === 'form' ? () => setViewState('calendar') : onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
-        <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles del Evento'}</h2>
+        <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles'}</h2>
       </div>
       
       {viewState === 'calendar' ? (
-        <div className="flex-1 flex flex-col w-full animate-fade-in">
-          {/* Navegación del Mes Minimalista */}
-          <div className="flex justify-between items-center px-6 py-4">
-            <h3 className="text-4xl font-bold capitalize text-white">{monthName} <span className="text-slate-600 text-2xl">{year}</span></h3>
-            <div className="flex gap-2">
-              <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-slate-800 rounded-full"><ChevronLeft size={24}/></button>
-              <button onClick={() => changeMonth(1)} className="p-3 hover:bg-slate-800 rounded-full"><ChevronRight size={24}/></button>
-            </div>
+        <div className="bg-slate-800 rounded-3xl p-6 shadow-xl animate-fade-in flex flex-col">
+          {/* Header del Calendario */}
+          <div className="flex justify-between items-center mb-6">
+            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
+            <h3 className="text-xl font-bold capitalize">{monthName} {year}</h3>
+            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
           </div>
           
-          {/* Días de la semana */}
-          <div className="grid grid-cols-7 text-center mb-2">
-            {['L','M','M','J','V','S','D'].map(d => (
-              <div key={d} className="text-slate-500 font-bold text-sm">{d}</div>
-            ))}
+          <div className="grid grid-cols-7 gap-2 text-center mb-2 text-slate-400 text-sm font-medium">
+            <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
           </div>
           
-          {/* Grilla de Días FULL WIDTH */}
-          <div className="grid grid-cols-7 flex-1 content-start px-2 gap-y-2">
+          {/* Grilla con botones CUADRADOS (aspect-square) */}
+          <div className="grid grid-cols-7 gap-2">
             {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} />)}
             {Array.from({ length: days }).map((_, i) => {
               const day = i + 1;
@@ -379,37 +373,25 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
               const fullDate = `${year}-${checkM}-${checkD}`;
               const isSelected = fullDate === selectedDate;
               const hasEvents = events.some(e => isSameDate(e.date, fullDate, e.category));
-              
-              // Verificación simple de "hoy"
-              const todayStr = getTodayStr();
-              const isToday = fullDate === todayStr;
-
               return (
                 <button 
                   key={day} 
                   onClick={() => handleDaySelect(day)} 
-                  className="relative aspect-square flex flex-col items-center justify-center group"
+                  className={`aspect-square rounded-xl flex flex-col items-center justify-center font-bold transition-all relative
+                    ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-slate-900 hover:bg-slate-700 text-slate-300'}
+                  `}
                 >
-                  {/* Círculo de selección o hoy */}
-                  <div className={`
-                    w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold transition-all
-                    ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 
-                      isToday ? 'text-cyan-400 bg-cyan-950/30' : 'text-slate-300 group-hover:bg-slate-800'}
-                  `}>
-                    {day}
-                  </div>
-                  
-                  {/* Indicador de evento (punto) */}
-                  {hasEvents && (
-                    <div className={`w-1.5 h-1.5 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-cyan-500'}`}></div>
-                  )}
+                  <span>{day}</span>
+                  {/* Puntos indicadores */}
+                  {hasEvents && !isSelected && <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full mt-1"></div>}
+                  {hasEvents && isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full mt-1"></div>}
                 </button>
               );
             })}
           </div>
         </div>
       ) : (
-        <div className="animate-slide-up space-y-6 px-4 pb-10">
+        <div className="animate-slide-up space-y-6">
           <div className="bg-slate-800 p-4 rounded-3xl border border-slate-700">
             <h4 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Ya agendado para hoy:</h4>
             {eventsOnSelectedDate.length === 0 ? (
@@ -534,8 +516,8 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
         <button onClick={() => setShowForm(true)} className="p-3 bg-blue-500 rounded-full text-white hover:bg-blue-400 shadow-lg shadow-blue-500/30"><Plus size={24} /></button>
       </div>
       {!showForm ? (
-        <div className="grid grid-cols-2 gap-4 relative z-10">
-          {goals.length === 0 && <div className="col-span-2 text-center py-20 text-slate-500"><Trophy size={48} className="mx-auto mb-2 opacity-50"/><p>Sin objetivos activos.</p></div>}
+        <div className="grid grid-cols-1 gap-6 relative z-10">
+          {goals.length === 0 && <div className="col-span-1 text-center py-20 text-slate-500"><Trophy size={48} className="mx-auto mb-2 opacity-50"/><p>Sin objetivos activos.</p></div>}
           {goals.map(goal => (
             <button 
               key={goal.id} 
@@ -543,10 +525,10 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
               className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg flex flex-col hover:border-blue-500 transition-colors text-left"
             >
               <div className="p-3 bg-slate-900 border-b border-slate-700">
-                <h3 className="font-bold text-white text-sm truncate">{goal.title}</h3>
-                <p className="text-[10px] text-slate-400 mt-1">Marca tu progreso</p>
+                <h3 className="font-bold text-white text-lg truncate">{goal.title}</h3>
+                <p className="text-xs text-slate-400 mt-1">Marca tu progreso</p>
               </div>
-              <div className="p-2 opacity-100 pointer-events-none">
+              <div className="p-4 opacity-100 pointer-events-none">
                 <GoalMiniCalendarPreview goal={goal} /> 
               </div>
             </button>
@@ -574,17 +556,18 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
   const offset = startDay === 0 ? 6 : startDay - 1;
 
   return (
-    <div>
-      <div className="text-center mb-1 text-[10px] font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
-      <div className="grid grid-cols-7 gap-0.5">
+    <div className="w-full">
+      <div className="text-center mb-2 text-xs font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
+      <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
-        {Array.from({ length: Math.min(daysInMonth, 14) }).map((_, i) => {
+        {/* CORRECCIÓN: Mostramos TODOS los días del mes, no solo 14 */}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
           const isCompleted = goal.completedDates.includes(dateStr);
           return (
             <div key={day} className={`aspect-square rounded flex items-center justify-center text-[8px] font-bold relative ${isCompleted ? 'bg-emerald-500/50 text-emerald-100' : 'text-slate-600'}`}>
               {day}
-              {isCompleted && <div className="absolute inset-0 flex items-center justify-center"><X className="text-red-500 w-full h-full p-0.5" strokeWidth={2} /></div>}
+              {isCompleted && <div className="absolute inset-0 flex items-center justify-center"><X className="text-red-500 w-full h-full p-px" strokeWidth={2} /></div>}
             </div>
           );
         })}
@@ -612,52 +595,54 @@ const GoalDetailView = ({ goal, onUpdate, onDelete, onBack }: { goal: Goal, onUp
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 p-6 flex flex-col">
-      <div className="flex justify-between items-start mb-6">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
-          <div>
-            <h2 className="text-2xl font-bold text-white leading-tight">{goal.title}</h2>
-            <p className="text-slate-400 text-sm">Progreso</p>
+    <div className="min-h-screen bg-dark-900 p-6 flex flex-col items-center">
+      <div className="w-full max-w-md">
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex items-center gap-4">
+            <button onClick={onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
+            <div>
+              <h2 className="text-2xl font-bold text-white leading-tight">{goal.title}</h2>
+              <p className="text-slate-400 text-sm">Progreso</p>
+            </div>
           </div>
+          <button onClick={() => { if(confirm('¿Eliminar objetivo?')) onDelete(goal.id); }} className="p-3 bg-red-500/10 text-red-500 rounded-full hover:bg-red-500/20"><Trash2 size={24} /></button>
         </div>
-        <button onClick={() => { if(confirm('¿Eliminar objetivo?')) onDelete(goal.id); }} className="p-3 bg-red-500/10 text-red-500 rounded-full hover:bg-red-500/20"><Trash2 size={24} /></button>
-      </div>
 
-      <div className="flex-1 bg-slate-800 rounded-3xl p-4 shadow-xl flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <button onClick={() => changeMonth(-1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
-          <h3 className="text-2xl font-bold capitalize text-white">{monthName} {y}</h3>
-          <button onClick={() => changeMonth(1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
-        </div>
-        
-        <div className="grid grid-cols-7 gap-2 text-center mb-2 text-slate-400 text-lg font-medium"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
-        
-        <div className="grid grid-cols-7 gap-2 flex-1 auto-rows-fr">
-          {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
-            const inRange = dateStr >= goal.startDate && dateStr <= goal.endDate; const isCompleted = goal.completedDates.includes(dateStr);
-            
-            return (
-              <button 
-                key={day} 
-                onClick={() => toggleDay(day)} 
-                disabled={!inRange} 
-                className={`w-full h-full min-h-[50px] rounded-xl flex items-center justify-center text-xl font-bold relative transition-all active:scale-95
-                  ${inRange ? 'bg-emerald-900/50 text-emerald-100 border-2 border-emerald-500/50' : 'text-slate-700'}
-                  ${!inRange ? 'opacity-30' : ''}
-                `}
-              >
-                {day}
-                {isCompleted && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-indigo-500/20 rounded-xl">
-                    <X className="text-red-500 w-full h-full p-0.5 drop-shadow-lg" strokeWidth={3} />
-                  </div>
-                )}
-              </button>
-            );
-          })}
+        <div className="bg-slate-800 rounded-3xl p-4 shadow-xl w-full flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <button onClick={() => changeMonth(-1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
+            <h3 className="text-2xl font-bold capitalize text-white">{monthName} {y}</h3>
+            <button onClick={() => changeMonth(1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
+          </div>
+          
+          <div className="grid grid-cols-7 gap-2 text-center mb-2 text-slate-400 text-lg font-medium"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
+          
+          <div className="grid grid-cols-7 gap-2 flex-1">
+            {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
+              const inRange = dateStr >= goal.startDate && dateStr <= goal.endDate; const isCompleted = goal.completedDates.includes(dateStr);
+              
+              return (
+                <button 
+                  key={day} 
+                  onClick={() => toggleDay(day)} 
+                  disabled={!inRange} 
+                  className={`aspect-square rounded-xl flex items-center justify-center text-xl font-bold relative transition-all active:scale-95
+                    ${inRange ? 'bg-emerald-900/50 text-emerald-100 border-2 border-emerald-500/50' : 'text-slate-700'}
+                    ${!inRange ? 'opacity-30' : ''}
+                  `}
+                >
+                  {day}
+                  {isCompleted && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-indigo-500/20 rounded-xl">
+                      <X className="text-red-500 w-full h-full p-0.5 drop-shadow-lg" strokeWidth={3} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

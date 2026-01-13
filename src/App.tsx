@@ -29,7 +29,7 @@ interface AgendaEvent {
   date: string;
   title: string;
   category: string;
-  // alarmsEnabled eliminado
+  // alarmsEnabled ELIMINADO DEFINITIVAMENTE
 }
 
 interface TodoItem {
@@ -327,23 +327,22 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
   };
   const handleSave = () => {
     if(!title) return;
-    // Eliminada la propiedad alarmsEnabled
-    const newEvent: AgendaEvent = { id: Date.now().toString(), date: selectedDate, title, category, alarmsEnabled: false };
+    // CORRECCIÓN: Eliminada la propiedad alarmsEnabled del objeto
+    const newEvent: AgendaEvent = { id: Date.now().toString(), date: selectedDate, title, category };
     onSaveEvent(newEvent);
     setViewState('calendar');
     setTitle('');
-    // Alerta eliminada, guardado silencioso
   };
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
-    <div className="min-h-screen bg-dark-900 p-4 flex flex-col"> {/* Padding reducido para maximizar espacio */}
+    <div className="min-h-screen bg-dark-900 p-4 flex flex-col">
       <div className="flex items-center gap-4 mb-4">
         <button onClick={viewState === 'form' ? () => setViewState('calendar') : onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
         <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles del Evento'}</h2>
       </div>
       {viewState === 'calendar' ? (
-        <div className="flex-1 bg-slate-800 rounded-3xl p-2 shadow-xl animate-fade-in flex flex-col w-full"> {/* Padding reducido, w-full explícito */}
+        <div className="flex-1 bg-slate-800 rounded-3xl p-2 shadow-xl animate-fade-in flex flex-col w-full">
           <div className="flex justify-between items-center mb-4 px-2 pt-2">
             <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
             <h3 className="text-2xl font-bold capitalize">{monthName} {year}</h3>
@@ -379,9 +378,7 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Fecha</label><div className="text-xl font-bold text-white mt-1">{selectedDate}</div></div>
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">¿Qué vamos a hacer?</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej. Tarea importante..." className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mt-2 text-white focus:ring-2 focus:ring-cyan-500 outline-none" /></div>
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Categoría</label><div className="grid grid-cols-3 gap-2 mt-2">{CATEGORIES.map(cat => (<button key={cat.id} onClick={() => setCategory(cat.id)} className={`p-3 rounded-xl flex flex-col items-center gap-2 border transition-all ${category === cat.id ? 'border-cyan-500 bg-cyan-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-400'}`}><div className={`${category === cat.id ? 'text-cyan-400' : ''}`}>{cat.icon}</div><span className="text-xs">{cat.label}</span></button>))}</div></div>
-            
-            {/* Seccion de alarmas eliminada */}
-            
+            {/* Alarm UI Removed */}
             <button onClick={handleSave} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"><Save size={20} /> Guardar Evento</button>
           </div>
         </div>

@@ -19,7 +19,8 @@ import {
   AlignLeft,
   Trophy,
   Gift,
-  Download
+  Download,
+  Bell // Recuperamos Bell solo para mostrar el icono en la lista, no para crear alarmas
 } from 'lucide-react';
 
 // --- TIPOS DE DATOS ---
@@ -344,14 +345,14 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
-    <div className="min-h-screen bg-dark-900 p-2 flex flex-col">
-      <div className="flex items-center gap-4 mb-4 px-2 mt-2">
+    <div className="min-h-screen bg-dark-900 flex flex-col"> {/* Quitamos padding del contenedor principal */}
+      <div className="flex items-center gap-4 mb-2 px-4 pt-4"> {/* Padding solo en el header */}
         <button onClick={viewState === 'form' ? () => setViewState('calendar') : onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
         <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles'}</h2>
       </div>
       
       {viewState === 'calendar' ? (
-        <div className="flex-1 bg-slate-800 rounded-3xl shadow-xl animate-fade-in flex flex-col w-full overflow-hidden">
+        <div className="flex-1 bg-slate-800 shadow-xl animate-fade-in flex flex-col w-full overflow-hidden"> {/* Quitamos rounded-3xl y p-2 */}
           <div className="flex justify-between items-center p-4 bg-slate-900/50">
             <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
             <h3 className="text-2xl font-bold capitalize">{monthName} {year}</h3>
@@ -362,7 +363,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
             <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
           </div>
           
-          <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-slate-800 gap-px border-t border-slate-700 bg-slate-700"> {/* gap-px creates borders */}
+          <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-slate-800 gap-px border-t border-slate-700 bg-slate-700"> {/* gap-px para bordes finos */}
             {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} className="bg-slate-800" />)}
             {Array.from({ length: days }).map((_, i) => {
               const day = i + 1;
@@ -375,7 +376,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                 <button 
                   key={day} 
                   onClick={() => handleDaySelect(day)} 
-                  className={`flex flex-col items-center justify-center font-bold text-xl transition-all relative bg-slate-800
+                  className={`flex flex-col items-center justify-center font-bold text-xl transition-all relative bg-slate-800 w-full h-full
                     ${isSelected ? 'bg-cyan-500 text-white z-10' : 'hover:bg-slate-700 text-slate-300'}
                   `}
                 >
@@ -388,7 +389,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
           </div>
         </div>
       ) : (
-        <div className="animate-slide-up space-y-6 px-2">
+        <div className="animate-slide-up space-y-6 px-4 pt-4"> {/* Padding normal para el formulario */}
           {/* LISTA DE EVENTOS CON BOTÓN DE BORRAR */}
           <div className="bg-slate-800 p-4 rounded-3xl border border-slate-700">
             <h4 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Ya agendado para hoy:</h4>

@@ -5,7 +5,6 @@ import {
   LayoutDashboard, 
   ChevronLeft, 
   ChevronRight, 
-  Bell, 
   CheckSquare, 
   Save, 
   Trash2,
@@ -30,7 +29,7 @@ interface AgendaEvent {
   date: string;
   title: string;
   category: string;
-  alarmsEnabled: boolean;
+  // alarmsEnabled eliminado
 }
 
 interface TodoItem {
@@ -132,8 +131,7 @@ const StyleInjector = () => {
       });
     }
 
-    // CAMBIO: Título actualizado
-    document.title = "AGENDA";
+    document.title = "Agenda ED";
 
   }, []);
   return null;
@@ -218,7 +216,7 @@ const MainMenu = ({ onNavigate }: { onNavigate: (view: string) => void }) => {
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
           <Plus size={32} className="text-emerald-400 mb-4" />
           <h2 className="text-2xl font-bold text-white mb-1">Agendar</h2>
-          <p className="text-slate-400 text-sm">Programar eventos y alarmas</p>
+          <p className="text-slate-400 text-sm">Programar eventos</p>
         </button>
 
         <div className="grid grid-cols-2 gap-4">
@@ -285,7 +283,6 @@ const DailyView = ({ events, onBack }: { events: AgendaEvent[], onBack: () => vo
                 <div className="w-full">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`text-xs px-2 py-1 rounded-md text-white font-medium flex items-center gap-1 ${cat?.color || 'bg-slate-600'}`}>{cat?.icon} {cat?.label || 'General'}</span>
-                    {event.alarmsEnabled && <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-md"><Bell size={12} /> Alarma</span>}
                   </div>
                   <h3 className="text-xl font-bold text-white break-words w-full">{event.title}</h3>
                   {event.category === 'cumpleaños' && <p className="text-xs text-pink-400 mt-1">🎂 Se repite cada año</p>}
@@ -304,7 +301,6 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('trabajo');
-  const [alarm, setAlarm] = useState(true);
   const [viewState, setViewState] = useState<'calendar' | 'form'>('calendar');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
@@ -331,29 +327,30 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
   };
   const handleSave = () => {
     if(!title) return;
-    const newEvent: AgendaEvent = { id: Date.now().toString(), date: selectedDate, title, category, alarmsEnabled: alarm };
+    // Eliminada la propiedad alarmsEnabled
+    const newEvent: AgendaEvent = { id: Date.now().toString(), date: selectedDate, title, category, alarmsEnabled: false };
     onSaveEvent(newEvent);
     setViewState('calendar');
     setTitle('');
-    alert("¡Evento Agendado!");
+    // Alerta eliminada, guardado silencioso
   };
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
-    <div className="min-h-screen bg-dark-900 p-6 flex flex-col">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="min-h-screen bg-dark-900 p-4 flex flex-col"> {/* Padding reducido para maximizar espacio */}
+      <div className="flex items-center gap-4 mb-4">
         <button onClick={viewState === 'form' ? () => setViewState('calendar') : onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
         <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles del Evento'}</h2>
       </div>
       {viewState === 'calendar' ? (
-        <div className="flex-1 bg-slate-800 rounded-3xl p-4 shadow-xl animate-fade-in flex flex-col">
-          <div className="flex justify-between items-center mb-4">
-            <button onClick={() => changeMonth(-1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
+        <div className="flex-1 bg-slate-800 rounded-3xl p-2 shadow-xl animate-fade-in flex flex-col w-full"> {/* Padding reducido, w-full explícito */}
+          <div className="flex justify-between items-center mb-4 px-2 pt-2">
+            <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
             <h3 className="text-2xl font-bold capitalize">{monthName} {year}</h3>
-            <button onClick={() => changeMonth(1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
+            <button onClick={() => changeMonth(1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
           </div>
-          <div className="grid grid-cols-7 gap-2 text-center mb-2 text-slate-400 text-lg font-medium"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
-          <div className="grid grid-cols-7 gap-2 flex-1">
+          <div className="grid grid-cols-7 gap-1 text-center mb-2 text-slate-400 text-lg font-medium"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
+          <div className="grid grid-cols-7 gap-1 flex-1 auto-rows-fr">
             {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} />)}
             {Array.from({ length: days }).map((_, i) => {
               const day = i + 1;
@@ -363,7 +360,7 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
               const isSelected = fullDate === selectedDate;
               const hasEvents = events.some(e => isSameDate(e.date, fullDate, e.category));
               return (
-                <button key={day} onClick={() => handleDaySelect(day)} className={`w-full h-full min-h-[60px] rounded-xl flex flex-col items-center justify-center font-bold text-lg transition-all relative ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-slate-900 hover:bg-slate-700 text-slate-300'}`}>
+                <button key={day} onClick={() => handleDaySelect(day)} className={`w-full h-full rounded-xl flex flex-col items-center justify-center font-bold text-xl transition-all relative ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-slate-900 hover:bg-slate-700 text-slate-300'}`}>
                   <span>{day}</span>
                   {hasEvents && !isSelected && <div className="w-2 h-2 bg-cyan-400 rounded-full mt-1"></div>}
                   {hasEvents && isSelected && <div className="w-2 h-2 bg-white rounded-full mt-1"></div>}
@@ -382,7 +379,9 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Fecha</label><div className="text-xl font-bold text-white mt-1">{selectedDate}</div></div>
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">¿Qué vamos a hacer?</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej. Tarea importante..." className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mt-2 text-white focus:ring-2 focus:ring-cyan-500 outline-none" /></div>
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Categoría</label><div className="grid grid-cols-3 gap-2 mt-2">{CATEGORIES.map(cat => (<button key={cat.id} onClick={() => setCategory(cat.id)} className={`p-3 rounded-xl flex flex-col items-center gap-2 border transition-all ${category === cat.id ? 'border-cyan-500 bg-cyan-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-400'}`}><div className={`${category === cat.id ? 'text-cyan-400' : ''}`}>{cat.icon}</div><span className="text-xs">{cat.label}</span></button>))}</div></div>
-            <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-700"><div className="flex items-center gap-3"><div className={`p-2 rounded-lg ${alarm ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-400'}`}><Bell size={20} /></div><div><p className="font-bold text-white">Recordatorios</p><p className="text-xs text-slate-400">1 día antes y hoy (11:00 AM)</p></div></div><input type="checkbox" checked={alarm} onChange={(e) => setAlarm(e.target.checked)} className="w-6 h-6 accent-amber-500 rounded cursor-pointer" /></div>
+            
+            {/* Seccion de alarmas eliminada */}
+            
             <button onClick={handleSave} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"><Save size={20} /> Guardar Evento</button>
           </div>
         </div>
@@ -434,12 +433,11 @@ const BirthdaysView = ({ events, onBack }: { events: AgendaEvent[], onBack: () =
   );
 };
 
-// 5. OBJETIVOS (GOALS)
+// 5. OBJETIVOS
 const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { goals: Goal[], onSaveGoal: (g: Goal) => void, onUpdateGoal: (g: Goal) => void, onDeleteGoal: (id: string) => void, onBack: () => void }) => {
   const [showForm, setShowForm] = useState(false);
-  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null); // Nuevo estado para navegar al detalle
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null); 
   
-  // Estados para crear nuevo objetivo
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [start, setStart] = useState(getTodayStr());
@@ -453,7 +451,6 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
     setTitle(''); setDesc('');
   };
 
-  // Si hay un objetivo seleccionado, mostramos la vista detallada
   if (selectedGoalId) {
     const goal = goals.find(g => g.id === selectedGoalId);
     if (goal) {
@@ -480,7 +477,6 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
         <div className="grid grid-cols-2 gap-4 relative z-10">
           {goals.length === 0 && <div className="col-span-2 text-center py-20 text-slate-500"><Trophy size={48} className="mx-auto mb-2 opacity-50"/><p>Sin objetivos activos.</p></div>}
           {goals.map(goal => (
-            // La tarjeta ahora es un botón para ir al detalle
             <button 
               key={goal.id} 
               onClick={() => setSelectedGoalId(goal.id)}
@@ -490,7 +486,7 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
                 <h3 className="font-bold text-white text-sm truncate">{goal.title}</h3>
                 <p className="text-[10px] text-slate-400 mt-1">Toca para marcar progreso</p>
               </div>
-              <div className="p-2 opacity-50 pointer-events-none"> {/* Calendario visual no interactivo */}
+              <div className="p-2 opacity-50 pointer-events-none">
                 <GoalMiniCalendarPreview goal={goal} /> 
               </div>
             </button>
@@ -509,7 +505,6 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
   );
 };
 
-// Componente Visual para la lista (No interactivo)
 const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
   const [currentDate] = useState(new Date()); 
   const y = currentDate.getFullYear();
@@ -523,7 +518,7 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
       <div className="text-center mb-1 text-[10px] font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
       <div className="grid grid-cols-7 gap-0.5">
         {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
-        {Array.from({ length: Math.min(daysInMonth, 14) }).map((_, i) => { // Solo muestra 2 semanas para preview
+        {Array.from({ length: Math.min(daysInMonth, 14) }).map((_, i) => {
           const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
           const isCompleted = goal.completedDates.includes(dateStr);
           return (
@@ -538,7 +533,6 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
   );
 };
 
-// VISTA DETALLADA DEL OBJETIVO (Calendario Gigante Interactivo)
 const GoalDetailView = ({ goal, onUpdate, onDelete, onBack }: { goal: Goal, onUpdate: (g: Goal) => void, onDelete: (id: string) => void, onBack: () => void }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   

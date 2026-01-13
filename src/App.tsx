@@ -19,8 +19,7 @@ import {
   AlignLeft,
   Trophy,
   Gift,
-  Download,
-  Bell
+  Download
 } from 'lucide-react';
 
 // --- TIPOS DE DATOS ---
@@ -561,7 +560,7 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
       <div className="text-center mb-2 text-xs font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
+        {Array.from({ length: Math.min(daysInMonth, 14) }).map((_, i) => {
           const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
           const isCompleted = goal.completedDates.includes(dateStr);
           return (

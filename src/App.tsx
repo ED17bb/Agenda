@@ -19,7 +19,8 @@ import {
   AlignLeft,
   Trophy,
   Gift,
-  Download
+  Download,
+  Bell
 } from 'lucide-react';
 
 // --- TIPOS DE DATOS ---
@@ -148,12 +149,13 @@ const CATEGORIES = [
   { id: 'cumpleaños', label: 'Cumpleaños', icon: <Cake size={16} />, color: 'bg-pink-500' },
 ];
 
+// CAMBIO: Ahora el texto es negro (text-black) para mayor contraste
 const STICKY_COLORS = [
-  'bg-yellow-200 text-yellow-900',
-  'bg-blue-200 text-blue-900',
-  'bg-rose-200 text-rose-900',
-  'bg-green-200 text-green-900',
-  'bg-purple-200 text-purple-900',
+  'bg-yellow-200 text-black',
+  'bg-blue-200 text-black',
+  'bg-rose-200 text-black',
+  'bg-green-200 text-black',
+  'bg-purple-200 text-black',
 ];
 
 const getTodayStr = () => new Date().toISOString().split('T')[0];
@@ -305,7 +307,7 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
   );
 };
 
-// 3. AGENDAR (Almanaque Cuadrado y Restaurado)
+// 3. AGENDAR (Almanaque con números grandes)
 const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events: AgendaEvent[], onSaveEvent: (e: AgendaEvent) => void, onDeleteEvent: (id: string) => void, onBack: () => void }) => {
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
@@ -344,28 +346,27 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
-    <div className="min-h-screen bg-dark-900 p-4 flex flex-col">
-      <div className="flex items-center gap-4 mb-4">
+    <div className="min-h-screen bg-dark-900 p-2 flex flex-col">
+      <div className="flex items-center gap-4 mb-4 px-2 mt-2">
         <button onClick={viewState === 'form' ? () => setViewState('calendar') : onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
         <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles'}</h2>
       </div>
       
       {viewState === 'calendar' ? (
-        <div className="bg-slate-800 rounded-3xl p-6 shadow-xl animate-fade-in flex flex-col">
-          {/* Header del Calendario */}
-          <div className="flex justify-between items-center mb-6">
-            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
-            <h3 className="text-xl font-bold capitalize">{monthName} {year}</h3>
-            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
+        <div className="flex-1 bg-slate-800 shadow-xl animate-fade-in flex flex-col w-full overflow-hidden">
+          <div className="flex justify-between items-center p-4 bg-slate-900/50">
+            <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
+            <h3 className="text-2xl font-bold capitalize">{monthName} {year}</h3>
+            <button onClick={() => changeMonth(1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
           </div>
           
-          <div className="grid grid-cols-7 gap-2 text-center mb-2 text-slate-400 text-sm font-medium">
+          {/* HEADER DIAS: LETRAS MAS GRANDES (text-xl) */}
+          <div className="grid grid-cols-7 text-center py-2 bg-slate-900/30 text-slate-400 text-xl font-bold border-b border-slate-700">
             <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
           </div>
           
-          {/* Grilla con botones CUADRADOS (aspect-square) */}
-          <div className="grid grid-cols-7 gap-2">
-            {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} />)}
+          <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-slate-800 gap-px border-t border-slate-700 bg-slate-700">
+            {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} className="bg-slate-800" />)}
             {Array.from({ length: days }).map((_, i) => {
               const day = i + 1;
               const checkM = (currentMonth.getMonth() + 1).toString().padStart(2, '0');
@@ -377,21 +378,21 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                 <button 
                   key={day} 
                   onClick={() => handleDaySelect(day)} 
-                  className={`aspect-square rounded-xl flex flex-col items-center justify-center font-bold transition-all relative
-                    ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-slate-900 hover:bg-slate-700 text-slate-300'}
+                  className={`flex flex-col items-center justify-center font-bold transition-all relative bg-slate-800 w-full h-full
+                    ${isSelected ? 'bg-cyan-500 text-white z-10' : 'hover:bg-slate-700 text-slate-300'}
                   `}
                 >
-                  <span>{day}</span>
-                  {/* Puntos indicadores */}
-                  {hasEvents && !isSelected && <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full mt-1"></div>}
-                  {hasEvents && isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full mt-1"></div>}
+                  {/* DIAS: NUMEROS MAS GRANDES (text-3xl) */}
+                  <span className="text-3xl">{day}</span>
+                  {hasEvents && !isSelected && <div className="w-2 h-2 bg-cyan-400 rounded-full mt-1"></div>}
+                  {hasEvents && isSelected && <div className="w-2 h-2 bg-white rounded-full mt-1"></div>}
                 </button>
               );
             })}
           </div>
         </div>
       ) : (
-        <div className="animate-slide-up space-y-6">
+        <div className="animate-slide-up space-y-6 px-4 pt-4">
           <div className="bg-slate-800 p-4 rounded-3xl border border-slate-700">
             <h4 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Ya agendado para hoy:</h4>
             {eventsOnSelectedDate.length === 0 ? (
@@ -560,7 +561,6 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
       <div className="text-center mb-2 text-xs font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
-        {/* CORRECCIÓN: Mostramos TODOS los días del mes, no solo 14 */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
           const isCompleted = goal.completedDates.includes(dateStr);
@@ -673,9 +673,10 @@ const StickyBoardView = ({ notes, onSaveNote, onDeleteNote, onBack }: { notes: S
         {notes.map(note => (
           <div key={note.id} onClick={() => handleEditNote(note)} className={`p-4 rounded-sm shadow-xl cursor-pointer hover:scale-105 transition-transform duration-200 min-h-[160px] flex flex-col ${note.color}`} style={{ transform: `rotate(${note.rotation}deg)` }}>
             <div className="w-3 h-3 rounded-full bg-black/20 mx-auto -mt-2 mb-2"></div>
-            <h3 className="font-bold text-lg mb-2 leading-tight line-clamp-2">{note.title}</h3>
+            <h3 className="font-bold text-2xl mb-2 leading-tight line-clamp-2">{note.title}</h3> {/* Titulo mas grande (2xl) */}
             <div className="space-y-1 flex-1 overflow-hidden">
-              {note.type === 'text' ? <p className="text-xs whitespace-pre-line line-clamp-6 opacity-80">{note.content}</p> : <>{note.items.slice(0, 3).map((item, i) => (<div key={i} className={`text-xs flex items-center gap-1 ${item.completed ? 'opacity-50 line-through' : ''}`}><div className="w-1.5 h-1.5 rounded-full bg-current opacity-60"></div><span className="truncate">{item.text}</span></div>))}{note.items.length > 3 && <div className="text-xs opacity-60 italic">...más items</div>}</>}
+              {/* VISTA PREVIA MAS GRANDE (text-lg) */}
+              {note.type === 'text' ? <p className="text-lg whitespace-pre-line line-clamp-6 opacity-80 font-semibold">{note.content}</p> : <>{note.items.slice(0, 3).map((item, i) => (<div key={i} className={`text-lg font-semibold flex items-center gap-1 ${item.completed ? 'opacity-50 line-through' : ''}`}><div className="w-1.5 h-1.5 rounded-full bg-current opacity-60"></div><span className="truncate">{item.text}</span></div>))}{note.items.length > 3 && <div className="text-sm opacity-60 italic">...más items</div>}</>}
             </div>
           </div>
         ))}
@@ -684,23 +685,25 @@ const StickyBoardView = ({ notes, onSaveNote, onDeleteNote, onBack }: { notes: S
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className={`w-full max-w-md rounded-lg shadow-2xl p-6 relative animate-zoom-in ${editingNote.color}`}>
             <button onClick={() => setEditingNote(null)} className="absolute top-2 right-2 p-2 hover:bg-black/10 rounded-full text-current"><X size={24} /></button>
-            <input value={editingNote.title} onChange={(e) => setEditingNote({...editingNote, title: e.target.value})} className="bg-transparent text-2xl font-bold w-full outline-none placeholder-current/50 mb-4 border-b border-black/10 pb-2 text-current" placeholder="Título de la nota..." />
+            <input value={editingNote.title} onChange={(e) => setEditingNote({...editingNote, title: e.target.value})} className="bg-transparent text-3xl font-bold w-full outline-none placeholder-current/50 mb-4 border-b border-black/10 pb-2 text-current" placeholder="Título de la nota..." /> {/* Input titulo mas grande (3xl) */}
             <div className="min-h-[200px] mb-4">
               {editingNote.type === 'text' ? (
-                <textarea value={editingNote.content} onChange={(e) => setEditingNote({...editingNote, content: e.target.value})} className="w-full h-[250px] bg-black/5 rounded-lg p-3 outline-none resize-none placeholder-current/50 text-current text-lg leading-relaxed" placeholder="Escribe aquí tus ideas..." />
+                // TEXTAREA MAS GRANDE (text-2xl)
+                <textarea value={editingNote.content} onChange={(e) => setEditingNote({...editingNote, content: e.target.value})} className="w-full h-[350px] bg-black/5 rounded-lg p-3 outline-none resize-none placeholder-current/50 text-current text-2xl leading-relaxed font-medium" placeholder="Escribe aquí tus ideas..." />
               ) : (
                 <>
-                  <div className="space-y-2 max-h-[250px] overflow-y-auto mb-4 custom-scrollbar">
+                  <div className="space-y-2 max-h-[350px] overflow-y-auto mb-4 custom-scrollbar">
                     {editingNote.items.map((item, idx) => (
                       <div key={item.id} className="flex items-center gap-2 group">
-                        <button onClick={() => toggleItem(idx)} className={`flex-1 text-left flex items-center gap-3 p-2 rounded hover:bg-black/5 transition-colors ${item.completed ? 'line-through opacity-50' : ''}`}>{item.completed ? <CheckSquare size={18} /> : <div className="w-[18px] h-[18px] border-2 border-current rounded-sm"></div>}<span className="text-lg">{item.text}</span></button>
-                        <button onClick={() => deleteItem(idx)} className="p-2 opacity-0 group-hover:opacity-100 hover:text-red-600 transition-opacity"><Trash2 size={16} /></button>
+                        {/* LIST ITEMS MAS GRANDES (text-2xl) */}
+                        <button onClick={() => toggleItem(idx)} className={`flex-1 text-left flex items-center gap-3 p-2 rounded hover:bg-black/5 transition-colors ${item.completed ? 'line-through opacity-50' : ''}`}>{item.completed ? <CheckSquare size={24} /> : <div className="w-[24px] h-[24px] border-2 border-current rounded-sm"></div>}<span className="text-2xl font-medium">{item.text}</span></button>
+                        <button onClick={() => deleteItem(idx)} className="p-2 opacity-0 group-hover:opacity-100 hover:text-red-600 transition-opacity"><Trash2 size={24} /></button>
                       </div>
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <input id="newItemInput" placeholder="Nuevo pendiente..." className="flex-1 bg-black/10 rounded-lg px-4 py-2 outline-none focus:bg-black/20 text-current placeholder-current/50" onKeyDown={(e) => { if(e.key === 'Enter') { addItem(e.currentTarget.value); e.currentTarget.value = ''; } }} />
-                    <button onClick={() => { const input = document.getElementById('newItemInput') as HTMLInputElement; addItem(input.value); input.value = ''; }} className="bg-black/20 hover:bg-black/30 text-current p-2 rounded-lg"><Plus /></button>
+                    <input id="newItemInput" placeholder="Nuevo pendiente..." className="flex-1 bg-black/10 rounded-lg px-4 py-3 outline-none focus:bg-black/20 text-current placeholder-current/50 text-xl" onKeyDown={(e) => { if(e.key === 'Enter') { addItem(e.currentTarget.value); e.currentTarget.value = ''; } }} />
+                    <button onClick={() => { const input = document.getElementById('newItemInput') as HTMLInputElement; addItem(input.value); input.value = ''; }} className="bg-black/20 hover:bg-black/30 text-current p-2 rounded-lg"><Plus size={24} /></button>
                   </div>
                 </>
               )}

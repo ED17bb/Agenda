@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
-import { initializeApp } from 'firebase/app';
+import { initializeApp, type FirebaseOptions } from 'firebase/app';
 import { 
   getAuth, 
   signInAnonymously, 
@@ -49,7 +49,7 @@ import {
 // --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
 
-// 1. Configuración de respaldo
+// 1. Configuración de respaldo (IMPORTANTE: Reemplaza esto con tus datos reales de Firebase Console)
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -59,8 +59,8 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Selección de configuración
-let activeConfig = localConfig;
+// 2. Selección de configuración (Lógica simplificada)
+let activeConfig = FALLBACK_CONFIG;
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
@@ -68,7 +68,7 @@ try {
     activeConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  console.warn('Usando config local');
+  console.warn('Usando configuración local de respaldo');
 }
 
 // 3. Inicializar
@@ -76,7 +76,7 @@ const app = initializeApp(activeConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 4. ID de la App sanitizado
+// 4. ID de la App sanitizado para evitar errores de rutas
 // @ts-ignore
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-ed-v1';
 const appId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '_');

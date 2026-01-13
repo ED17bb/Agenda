@@ -523,9 +523,9 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
             >
               <div className="p-3 bg-slate-900 border-b border-slate-700">
                 <h3 className="font-bold text-white text-sm truncate">{goal.title}</h3>
-                <p className="text-[10px] text-slate-400 mt-1">Toca para marcar progreso</p>
+                <p className="text-[10px] text-slate-400 mt-1">Marca tu progreso</p>
               </div>
-              <div className="p-2 opacity-50 pointer-events-none">
+              <div className="p-2 opacity-100 pointer-events-none">
                 <GoalMiniCalendarPreview goal={goal} /> 
               </div>
             </button>
@@ -624,14 +624,14 @@ const GoalDetailView = ({ goal, onUpdate, onDelete, onBack }: { goal: Goal, onUp
                 onClick={() => toggleDay(day)} 
                 disabled={!inRange} 
                 className={`w-full h-full min-h-[50px] rounded-xl flex items-center justify-center text-xl font-bold relative transition-all active:scale-95
-                  ${inRange ? 'bg-indigo-900/30 text-indigo-200 border-2 border-indigo-500/30' : 'text-slate-700'}
+                  ${inRange ? 'bg-emerald-900/50 text-emerald-100 border-2 border-emerald-500/50' : 'text-slate-700'}
                   ${!inRange ? 'opacity-30' : ''}
                 `}
               >
                 {day}
                 {isCompleted && (
                   <div className="absolute inset-0 flex items-center justify-center bg-indigo-500/20 rounded-xl">
-                    <X className="text-red-500 w-full h-full p-2 drop-shadow-lg" strokeWidth={3} />
+                    <X className="text-red-500 w-full h-full p-0.5 drop-shadow-lg" strokeWidth={3} />
                   </div>
                 )}
               </button>

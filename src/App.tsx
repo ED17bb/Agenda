@@ -20,7 +20,8 @@ import {
   Trophy,
   Gift,
   Download,
-  Loader2
+  Loader2,
+  Bell // <--- Recuperamos la campana
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -46,10 +47,9 @@ import {
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE (LIMPIA) ---
+// --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
 
-// 1. Configuración manual de respaldo
 const fallbackConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -59,7 +59,6 @@ const fallbackConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Determinar configuración final
 let currentConfig = fallbackConfig;
 
 try {
@@ -72,15 +71,45 @@ try {
   console.warn('Usando configuración local');
 }
 
-// 3. Inicializar
 const app = initializeApp(currentConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 4. ID de la App sanitizado
 // @ts-ignore
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-ed-v1';
 const appId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+// --- UTILIDAD: AÑADIR ALARMA AL CELULAR ---
+const addToPhoneCalendar = (title: string, date: string) => {
+  // Formato para .ics (AñoMesDia)
+  const dateStr = date.replace(/-/g, '');
+  
+  // Crear contenido del archivo de calendario
+  // Configurado para sonar a las 9:00 AM del día del evento
+  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:${dateStr}
+DTEND;VALUE=DATE:${dateStr}
+SUMMARY:${title}
+DESCRIPTION:Recordatorio de Agenda ED
+BEGIN:VALARM
+TRIGGER:-PT9H
+ACTION:DISPLAY
+DESCRIPTION:Reminder
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `${title}.ics`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 // --- TIPOS DE DATOS ---
 
@@ -89,7 +118,8 @@ interface AgendaEvent {
   date: string;
   title: string;
   category: string;
-  completed: boolean; 
+  completed: boolean;
+  alarmsEnabled?: boolean; // Nuevo campo opcional
 }
 
 interface TodoItem {
@@ -355,6 +385,12 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
                       {/* Renderizado seguro */}
                       {cat && React.createElement(cat.icon, { size: 16 })} {cat?.label || 'General'}
                     </span>
+                    {/* INDICADOR VISUAL SI TIENE ALARMA */}
+                    {event.alarmsEnabled && (
+                      <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-md ml-auto">
+                        <Bell size={12} />
+                      </span>
+                    )}
                   </div>
                   <h3 className={`text-xl font-bold text-white break-words w-full ${event.completed ? 'line-through text-slate-400' : ''}`}>
                     {event.title}
@@ -376,6 +412,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('trabajo');
+  const [alarm, setAlarm] = useState(false); // ESTADO PARA LA ALARMA
   const [viewState, setViewState] = useState<'calendar' | 'form'>('calendar');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
@@ -400,13 +437,29 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
     setSelectedDate(`${y}-${m}-${d}`);
     setViewState('form');
   };
+  
   const handleSave = () => {
     if(!title) return;
-    const newEvent: AgendaEvent = { id: Date.now().toString(), date: selectedDate, title, category, completed: false };
+    const newEvent: AgendaEvent = { 
+      id: Date.now().toString(), 
+      date: selectedDate, 
+      title, 
+      category, 
+      completed: false,
+      alarmsEnabled: alarm // GUARDAMOS SI TIENE ALARMA
+    };
     onSaveEvent(newEvent);
+    
+    // SI TIENE ALARMA, DISPARAMOS LA DESCARGA AL CELULAR
+    if (alarm) {
+      addToPhoneCalendar(title, selectedDate);
+    }
+
     setViewState('calendar');
     setTitle('');
+    setAlarm(false);
   };
+  
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
@@ -469,6 +522,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cat?.color}`}></div>
                         <span className={`text-sm text-white truncate ${e.completed ? 'line-through text-slate-500' : ''}`}>{e.title}</span>
                         {e.category === 'cumpleaños' && <span className="text-xs">🎂</span>}
+                        {e.alarmsEnabled && <Bell size={12} className="text-amber-400" />}
                       </div>
                       <button 
                         onClick={() => { if(confirm('¿Borrar este evento?')) onDeleteEvent(e.id) }}
@@ -497,6 +551,26 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                 </button>
               ))}
             </div></div>
+            
+            {/* NUEVO BOTÓN DE ALARMA */}
+            <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${alarm ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                  <Bell size={20} />
+                </div>
+                <div>
+                  <p className="font-bold text-white">Alarma en celular</p>
+                  <p className="text-xs text-slate-400">Añadir al calendario del teléfono</p>
+                </div>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={alarm} 
+                onChange={(e) => setAlarm(e.target.checked)}
+                className="w-6 h-6 accent-amber-500 rounded cursor-pointer"
+              />
+            </div>
+
             <button onClick={handleSave} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"><Save size={20} /> Guardar Evento</button>
           </div>
         </div>

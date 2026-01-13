@@ -358,6 +358,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
             <button onClick={() => changeMonth(1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
           </div>
           
+          {/* Header estático para evitar error de claves duplicadas 'M' */}
           <div className="grid grid-cols-7 text-center py-2 bg-slate-900/30 text-slate-400 text-lg font-medium border-b border-slate-700">
             <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
           </div>
@@ -561,7 +562,7 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
           const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
           const isCompleted = goal.completedDates.includes(dateStr);
           return (
-            <div key={day} className={`aspect-square rounded flex items-center justify-center text-[8px] font-bold relative ${isCompleted ? 'bg-indigo-900/50 text-indigo-200' : 'text-slate-600'}`}>
+            <div key={day} className={`aspect-square rounded flex items-center justify-center text-[8px] font-bold relative ${isCompleted ? 'bg-emerald-500/50 text-emerald-100' : 'text-slate-600'}`}>
               {day}
               {isCompleted && <div className="absolute inset-0 flex items-center justify-center"><X className="text-red-500 w-full h-full p-0.5" strokeWidth={2} /></div>}
             </div>

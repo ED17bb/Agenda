@@ -305,7 +305,7 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
   );
 };
 
-// 3. AGENDAR (Almanaque Cuadrado Restaurado)
+// 3. AGENDAR (Almanaque con Tarjeta Flotante y Cuadrados Perfectos)
 const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events: AgendaEvent[], onSaveEvent: (e: AgendaEvent) => void, onDeleteEvent: (id: string) => void, onBack: () => void }) => {
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
@@ -379,7 +379,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                     ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-slate-900 hover:bg-slate-700 text-slate-300'}
                   `}
                 >
-                  <span className="text-2xl">{day}</span>
+                  <span className="text-3xl">{day}</span>
                   {hasEvents && !isSelected && <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full mt-1"></div>}
                   {hasEvents && isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full mt-1"></div>}
                 </button>
@@ -388,7 +388,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
           </div>
         </div>
       ) : (
-        <div className="animate-slide-up space-y-6 px-2">
+        <div className="animate-slide-up space-y-6 px-4 pt-4">
           <div className="bg-slate-800 p-4 rounded-3xl border border-slate-700">
             <h4 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Ya agendado para hoy:</h4>
             {eventsOnSelectedDate.length === 0 ? (
@@ -544,7 +544,6 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
   );
 };
 
-// MINI CALENDARIO CORREGIDO: Mes completo y centrado
 const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
   const [currentDate] = useState(new Date()); 
   const y = currentDate.getFullYear();
@@ -554,7 +553,7 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
   const offset = startDay === 0 ? 6 : startDay - 1;
 
   return (
-    <div className="w-full max-w-[280px] mx-auto"> {/* Centrado y ancho máximo para que no se estire feo */}
+    <div className="w-full max-w-[280px] mx-auto"> 
       <div className="text-center mb-2 text-xs font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
@@ -726,6 +725,25 @@ export default function App() {
   const [notes, setNotes] = useState<StickyNote[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
 
+  // Manejo del Historial del Navegador (Botón Atrás Físico)
+  useEffect(() => {
+    // Al cargar, aseguramos que el estado actual sea 'home'
+    window.history.replaceState({ view: 'home' }, '', '');
+
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      if (state && state.view) {
+        setView(state.view);
+      } else {
+        // Fallback a home si no hay estado
+        setView('home');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   useEffect(() => {
     const savedEvents = localStorage.getItem('agenda_ed_events');
     const savedNotes = localStorage.getItem('agenda_ed_notes');
@@ -738,6 +756,19 @@ export default function App() {
   useEffect(() => { localStorage.setItem('agenda_ed_events', JSON.stringify(events)); }, [events]);
   useEffect(() => { localStorage.setItem('agenda_ed_notes', JSON.stringify(notes)); }, [notes]);
   useEffect(() => { localStorage.setItem('agenda_ed_goals', JSON.stringify(goals)); }, [goals]);
+
+  // Función para navegar añadiendo al historial
+  const navigateTo = (newView: string) => {
+    if (newView !== view) {
+      window.history.pushState({ view: newView }, '', '');
+      setView(newView);
+    }
+  };
+
+  // Función para volver atrás (simula el botón físico)
+  const goBack = () => {
+    window.history.back();
+  };
 
   const handleSaveEvent = (newEvent: AgendaEvent) => setEvents([...events, newEvent]);
   const handleDeleteEvent = (id: string) => setEvents(events.filter(e => e.id !== id));
@@ -752,12 +783,12 @@ export default function App() {
   return (
     <div className="font-sans text-slate-100 bg-slate-950 min-h-screen selection:bg-brand-500/30">
       <StyleInjector />
-      {view === 'home' && <MainMenu onNavigate={setView} />}
-      {view === 'today' && <DailyView events={events} onToggleEvent={handleToggleEvent} onBack={() => setView('home')} />}
-      {view === 'schedule' && <SchedulerView events={events} onSaveEvent={handleSaveEvent} onDeleteEvent={handleDeleteEvent} onBack={() => setView('home')} />}
-      {view === 'board' && <StickyBoardView notes={notes} onSaveNote={handleSaveNote} onDeleteNote={handleDeleteNote} onBack={() => setView('home')} />}
-      {view === 'birthdays' && <BirthdaysView events={events} onBack={() => setView('home')} />}
-      {view === 'goals' && <GoalsView goals={goals} onSaveGoal={handleSaveGoal} onUpdateGoal={handleUpdateGoal} onDeleteGoal={handleDeleteGoal} onBack={() => setView('home')} />}
+      {view === 'home' && <MainMenu onNavigate={navigateTo} />}
+      {view === 'today' && <DailyView events={events} onToggleEvent={handleToggleEvent} onBack={goBack} />}
+      {view === 'schedule' && <SchedulerView events={events} onSaveEvent={handleSaveEvent} onDeleteEvent={handleDeleteEvent} onBack={goBack} />}
+      {view === 'board' && <StickyBoardView notes={notes} onSaveNote={handleSaveNote} onDeleteNote={handleDeleteNote} onBack={goBack} />}
+      {view === 'birthdays' && <BirthdaysView events={events} onBack={goBack} />}
+      {view === 'goals' && <GoalsView goals={goals} onSaveGoal={handleSaveGoal} onUpdateGoal={handleUpdateGoal} onDeleteGoal={handleDeleteGoal} onBack={goBack} />}
     </div>
   );
 }

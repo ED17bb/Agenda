@@ -16,7 +16,6 @@ import {
   DollarSign,
   Star,
   Cake,
-  // Check, <--- ELIMINADO PORQUE NO SE USABA
   List,
   AlignLeft,
   Trophy,
@@ -97,7 +96,6 @@ const StyleInjector = () => {
 
     // --- PWA SETUP ---
     const setupPWA = () => {
-      // Favicon
       let linkIcon = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
       if (!linkIcon) {
         linkIcon = document.createElement('link');
@@ -106,7 +104,6 @@ const StyleInjector = () => {
       }
       linkIcon.href = '/icono.png'; 
 
-      // Manifest Link
       let linkManifest = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
       if (!linkManifest) {
         linkManifest = document.createElement('link');
@@ -115,7 +112,6 @@ const StyleInjector = () => {
         document.head.appendChild(linkManifest);
       }
 
-      // Theme Color
       let metaTheme = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
       if (!metaTheme) {
         metaTheme = document.createElement('meta');
@@ -127,7 +123,6 @@ const StyleInjector = () => {
 
     setupPWA();
     
-    // Registrar Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(
@@ -137,7 +132,8 @@ const StyleInjector = () => {
       });
     }
 
-    document.title = "Agenda ED";
+    // CAMBIO: Título actualizado
+    document.title = "AGENDA";
 
   }, []);
   return null;
@@ -200,38 +196,25 @@ const MainMenu = ({ onNavigate }: { onNavigate: (view: string) => void }) => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in relative">
-      
-      {/* TÍTULO DINÁMICO: Muestra el año actual automáticamente */}
       <h1 className="text-8xl font-black text-cyan-400 mb-12 tracking-tighter drop-shadow-[0_0_15px_rgba(34,211,238,0.6)] select-none">
         {new Date().getFullYear()}
       </h1>
 
       <div className="grid gap-6 w-full max-w-md z-10">
-        
-        {/* BOTÓN INSTALAR */}
         {deferredPrompt && (
-          <button 
-            onClick={handleInstallClick}
-            className="bg-white/10 border border-cyan-500/50 text-cyan-400 p-3 rounded-2xl flex items-center justify-center gap-2 mb-2 font-bold animate-pulse"
-          >
+          <button onClick={handleInstallClick} className="bg-white/10 border border-cyan-500/50 text-cyan-400 p-3 rounded-2xl flex items-center justify-center gap-2 mb-2 font-bold animate-pulse">
             <Download size={20} /> Instalar App
           </button>
         )}
 
-        <button 
-          onClick={() => onNavigate('today')}
-          className="group relative overflow-hidden bg-slate-800 p-6 rounded-3xl border border-slate-700 hover:border-cyan-400 transition-all duration-300 text-left shadow-2xl"
-        >
+        <button onClick={() => onNavigate('today')} className="group relative overflow-hidden bg-slate-800 p-6 rounded-3xl border border-slate-700 hover:border-cyan-400 transition-all duration-300 text-left shadow-2xl">
           <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full -mr-10 -mt-10 blur-2xl group-hover:bg-cyan-500/20 transition-all"></div>
           <CalendarIcon size={32} className="text-cyan-400 mb-4" />
           <h2 className="text-2xl font-bold text-white mb-1">Mi Día</h2>
           <p className="text-slate-400 text-sm">Ver la agenda de hoy</p>
         </button>
 
-        <button 
-          onClick={() => onNavigate('schedule')}
-          className="group relative overflow-hidden bg-slate-800 p-6 rounded-3xl border border-slate-700 hover:border-emerald-500 transition-all duration-300 text-left shadow-2xl"
-        >
+        <button onClick={() => onNavigate('schedule')} className="group relative overflow-hidden bg-slate-800 p-6 rounded-3xl border border-slate-700 hover:border-emerald-500 transition-all duration-300 text-left shadow-2xl">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
           <Plus size={32} className="text-emerald-400 mb-4" />
           <h2 className="text-2xl font-bold text-white mb-1">Agendar</h2>
@@ -239,29 +222,20 @@ const MainMenu = ({ onNavigate }: { onNavigate: (view: string) => void }) => {
         </button>
 
         <div className="grid grid-cols-2 gap-4">
-          <button 
-            onClick={() => onNavigate('birthdays')}
-            className="group relative overflow-hidden bg-slate-800 p-4 rounded-3xl border border-slate-700 hover:border-pink-500 transition-all duration-300 text-left shadow-lg"
-          >
+          <button onClick={() => onNavigate('birthdays')} className="group relative overflow-hidden bg-slate-800 p-4 rounded-3xl border border-slate-700 hover:border-pink-500 transition-all duration-300 text-left shadow-lg">
             <div className="absolute top-0 right-0 w-16 h-16 bg-pink-500/10 rounded-full -mr-6 -mt-6 blur-xl"></div>
             <Gift size={24} className="text-pink-400 mb-2" />
             <h2 className="text-lg font-bold text-white">Cumpleaños</h2>
           </button>
 
-          <button 
-            onClick={() => onNavigate('goals')}
-            className="group relative overflow-hidden bg-slate-800 p-4 rounded-3xl border border-slate-700 hover:border-blue-500 transition-all duration-300 text-left shadow-lg"
-          >
+          <button onClick={() => onNavigate('goals')} className="group relative overflow-hidden bg-slate-800 p-4 rounded-3xl border border-slate-700 hover:border-blue-500 transition-all duration-300 text-left shadow-lg">
             <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-full -mr-6 -mt-6 blur-xl"></div>
             <Trophy size={24} className="text-blue-400 mb-2" />
             <h2 className="text-lg font-bold text-white">Objetivos</h2>
           </button>
         </div>
 
-        <button 
-          onClick={() => onNavigate('board')}
-          className="group relative overflow-hidden bg-slate-800 p-6 rounded-3xl border border-slate-700 hover:border-amber-500 transition-all duration-300 text-left shadow-2xl"
-        >
+        <button onClick={() => onNavigate('board')} className="group relative overflow-hidden bg-slate-800 p-6 rounded-3xl border border-slate-700 hover:border-amber-500 transition-all duration-300 text-left shadow-2xl">
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -mr-10 -mt-10 blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
           <LayoutDashboard size={32} className="text-amber-400 mb-4" />
           <h2 className="text-2xl font-bold text-white mb-1">Cosas por Hacer</h2>
@@ -307,13 +281,13 @@ const DailyView = ({ events, onBack }: { events: AgendaEvent[], onBack: () => vo
           todaysEvents.map(event => {
             const cat = CATEGORIES.find(c => c.id === event.category);
             return (
-              <div key={event.id} className="bg-slate-800 p-5 rounded-2xl border-l-4 border-cyan-500 shadow-lg flex justify-between items-start animate-slide-up">
-                <div>
+              <div key={event.id} className="w-full bg-slate-800 p-5 rounded-2xl border-l-4 border-cyan-500 shadow-lg flex justify-between items-start animate-slide-up">
+                <div className="w-full">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`text-xs px-2 py-1 rounded-md text-white font-medium flex items-center gap-1 ${cat?.color || 'bg-slate-600'}`}>{cat?.icon} {cat?.label || 'General'}</span>
                     {event.alarmsEnabled && <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-md"><Bell size={12} /> Alarma</span>}
                   </div>
-                  <h3 className="text-xl font-bold text-white">{event.title}</h3>
+                  <h3 className="text-xl font-bold text-white break-words w-full">{event.title}</h3>
                   {event.category === 'cumpleaños' && <p className="text-xs text-pink-400 mt-1">🎂 Se repite cada año</p>}
                 </div>
               </div>
@@ -366,20 +340,20 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
-    <div className="min-h-screen bg-dark-900 p-6">
+    <div className="min-h-screen bg-dark-900 p-6 flex flex-col">
       <div className="flex items-center gap-4 mb-6">
         <button onClick={viewState === 'form' ? () => setViewState('calendar') : onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
         <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles del Evento'}</h2>
       </div>
       {viewState === 'calendar' ? (
-        <div className="bg-slate-800 rounded-3xl p-6 shadow-xl animate-fade-in">
-          <div className="flex justify-between items-center mb-6">
-            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-700 rounded-full"><ChevronLeft /></button>
-            <h3 className="text-xl font-bold capitalize">{monthName} {year}</h3>
-            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-700 rounded-full"><ChevronRight /></button>
+        <div className="flex-1 bg-slate-800 rounded-3xl p-4 shadow-xl animate-fade-in flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <button onClick={() => changeMonth(-1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
+            <h3 className="text-2xl font-bold capitalize">{monthName} {year}</h3>
+            <button onClick={() => changeMonth(1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
           </div>
-          <div className="grid grid-cols-7 gap-2 text-center mb-2 text-slate-400 text-sm font-medium"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-2 text-center mb-2 text-slate-400 text-lg font-medium"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
+          <div className="grid grid-cols-7 gap-2 flex-1">
             {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} />)}
             {Array.from({ length: days }).map((_, i) => {
               const day = i + 1;
@@ -389,10 +363,10 @@ const SchedulerView = ({ events, onSaveEvent, onBack }: { events: AgendaEvent[],
               const isSelected = fullDate === selectedDate;
               const hasEvents = events.some(e => isSameDate(e.date, fullDate, e.category));
               return (
-                <button key={day} onClick={() => handleDaySelect(day)} className={`aspect-square rounded-xl flex flex-col items-center justify-center font-bold transition-all relative ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-slate-900 hover:bg-slate-700 text-slate-300'}`}>
+                <button key={day} onClick={() => handleDaySelect(day)} className={`w-full h-full min-h-[60px] rounded-xl flex flex-col items-center justify-center font-bold text-lg transition-all relative ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-slate-900 hover:bg-slate-700 text-slate-300'}`}>
                   <span>{day}</span>
-                  {hasEvents && !isSelected && <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full mt-1"></div>}
-                  {hasEvents && isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full mt-1"></div>}
+                  {hasEvents && !isSelected && <div className="w-2 h-2 bg-cyan-400 rounded-full mt-1"></div>}
+                  {hasEvents && isSelected && <div className="w-2 h-2 bg-white rounded-full mt-1"></div>}
                 </button>
               );
             })}
@@ -460,9 +434,12 @@ const BirthdaysView = ({ events, onBack }: { events: AgendaEvent[], onBack: () =
   );
 };
 
-// 5. OBJETIVOS
+// 5. OBJETIVOS (GOALS)
 const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { goals: Goal[], onSaveGoal: (g: Goal) => void, onUpdateGoal: (g: Goal) => void, onDeleteGoal: (id: string) => void, onBack: () => void }) => {
   const [showForm, setShowForm] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null); // Nuevo estado para navegar al detalle
+  
+  // Estados para crear nuevo objetivo
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [start, setStart] = useState(getTodayStr());
@@ -476,6 +453,21 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
     setTitle(''); setDesc('');
   };
 
+  // Si hay un objetivo seleccionado, mostramos la vista detallada
+  if (selectedGoalId) {
+    const goal = goals.find(g => g.id === selectedGoalId);
+    if (goal) {
+      return (
+        <GoalDetailView 
+          goal={goal} 
+          onUpdate={onUpdateGoal} 
+          onDelete={(id) => { onDeleteGoal(id); setSelectedGoalId(null); }}
+          onBack={() => setSelectedGoalId(null)} 
+        />
+      );
+    }
+  }
+
   return (
     <div className="min-h-screen bg-dark-900 p-6 relative overflow-hidden">
       <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#22d3ee 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
@@ -487,7 +479,22 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
       {!showForm ? (
         <div className="grid grid-cols-2 gap-4 relative z-10">
           {goals.length === 0 && <div className="col-span-2 text-center py-20 text-slate-500"><Trophy size={48} className="mx-auto mb-2 opacity-50"/><p>Sin objetivos activos.</p></div>}
-          {goals.map(goal => <GoalCard key={goal.id} goal={goal} onUpdate={onUpdateGoal} onDelete={onDeleteGoal} />)}
+          {goals.map(goal => (
+            // La tarjeta ahora es un botón para ir al detalle
+            <button 
+              key={goal.id} 
+              onClick={() => setSelectedGoalId(goal.id)}
+              className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg flex flex-col hover:border-blue-500 transition-colors text-left"
+            >
+              <div className="p-3 bg-slate-900 border-b border-slate-700">
+                <h3 className="font-bold text-white text-sm truncate">{goal.title}</h3>
+                <p className="text-[10px] text-slate-400 mt-1">Toca para marcar progreso</p>
+              </div>
+              <div className="p-2 opacity-50 pointer-events-none"> {/* Calendario visual no interactivo */}
+                <GoalMiniCalendarPreview goal={goal} /> 
+              </div>
+            </button>
+          ))}
         </div>
       ) : (
         <div className="bg-slate-800 p-6 rounded-3xl space-y-4 animate-slide-up relative z-10 shadow-2xl border border-slate-700">
@@ -502,34 +509,102 @@ const GoalsView = ({ goals, onSaveGoal, onUpdateGoal, onDeleteGoal, onBack }: { 
   );
 };
 
-const GoalCard = ({ goal, onUpdate, onDelete }: { goal: Goal, onUpdate: (g: Goal) => void, onDelete: (id: string) => void }) => {
-  const [currentDate, setCurrentDate] = useState(new Date()); 
+// Componente Visual para la lista (No interactivo)
+const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
+  const [currentDate] = useState(new Date()); 
+  const y = currentDate.getFullYear();
+  const m = currentDate.getMonth();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const startDay = new Date(y, m, 1).getDay();
+  const offset = startDay === 0 ? 6 : startDay - 1;
+
+  return (
+    <div>
+      <div className="text-center mb-1 text-[10px] font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
+      <div className="grid grid-cols-7 gap-0.5">
+        {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
+        {Array.from({ length: Math.min(daysInMonth, 14) }).map((_, i) => { // Solo muestra 2 semanas para preview
+          const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
+          const isCompleted = goal.completedDates.includes(dateStr);
+          return (
+            <div key={day} className={`aspect-square rounded flex items-center justify-center text-[8px] font-bold relative ${isCompleted ? 'bg-indigo-900/50 text-indigo-200' : 'text-slate-600'}`}>
+              {day}
+              {isCompleted && <div className="absolute inset-0 flex items-center justify-center"><X className="text-red-500 w-full h-full p-0.5" strokeWidth={2} /></div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// VISTA DETALLADA DEL OBJETIVO (Calendario Gigante Interactivo)
+const GoalDetailView = ({ goal, onUpdate, onDelete, onBack }: { goal: Goal, onUpdate: (g: Goal) => void, onDelete: (id: string) => void, onBack: () => void }) => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
   useEffect(() => { const start = new Date(goal.startDate + 'T00:00:00'); setCurrentDate(start); }, []);
-  const changeMonth = (offset: number, e: React.MouseEvent) => { e.stopPropagation(); const newDate = new Date(currentDate); newDate.setMonth(newDate.getMonth() + offset); setCurrentDate(newDate); };
+  
+  const changeMonth = (offset: number) => { const newDate = new Date(currentDate); newDate.setMonth(newDate.getMonth() + offset); setCurrentDate(newDate); };
+  
   const getDays = (date: Date) => { const y = date.getFullYear(); const m = date.getMonth(); const daysInMonth = new Date(y, m + 1, 0).getDate(); const startDay = new Date(y, m, 1).getDay(); const offset = startDay === 0 ? 6 : startDay - 1; return { daysInMonth, offset, y, m }; };
   const { daysInMonth, offset, y, m } = getDays(currentDate);
+  const monthName = currentDate.toLocaleString('es-ES', { month: 'long' });
+
   const toggleDay = (day: number) => {
     const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
     if (dateStr < goal.startDate || dateStr > goal.endDate) return;
     let newCompleted = [...goal.completedDates]; if (newCompleted.includes(dateStr)) { newCompleted = newCompleted.filter(d => d !== dateStr); } else { newCompleted.push(dateStr); }
     onUpdate({ ...goal, completedDates: newCompleted });
   };
+
   return (
-    <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg flex flex-col">
-      <div className="p-3 bg-slate-900 border-b border-slate-700 flex justify-between items-start"><h3 className="font-bold text-white text-sm truncate pr-2">{goal.title}</h3><button onClick={() => onDelete(goal.id)} className="text-slate-500 hover:text-red-500"><Trash2 size={14} /></button></div>
-      <div className="flex justify-between items-center px-2 py-1 bg-slate-800"><button onClick={(e) => changeMonth(-1, e)} className="p-1 hover:text-white"><ChevronLeft size={12} /></button><span className="text-xs font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</span><button onClick={(e) => changeMonth(1, e)} className="p-1 hover:text-white"><ChevronRight size={12} /></button></div>
-      <div className="p-2 grid grid-cols-7 gap-1">
-        {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
-          const inRange = dateStr >= goal.startDate && dateStr <= goal.endDate; const isCompleted = goal.completedDates.includes(dateStr);
-          return (
-            <button key={day} onClick={() => toggleDay(day)} disabled={!inRange} className={`aspect-square rounded flex items-center justify-center text-[10px] font-bold relative ${inRange ? 'bg-indigo-900/50 text-indigo-200 cursor-pointer hover:bg-indigo-900' : 'text-slate-600 cursor-default'}`}>
-              {day}
-              {isCompleted && <div className="absolute inset-0 flex items-center justify-center"><X className="text-red-500 w-full h-full p-0.5" strokeWidth={3} /></div>}
-            </button>
-          );
-        })}
+    <div className="min-h-screen bg-dark-900 p-6 flex flex-col">
+      <div className="flex justify-between items-start mb-6">
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
+          <div>
+            <h2 className="text-2xl font-bold text-white leading-tight">{goal.title}</h2>
+            <p className="text-slate-400 text-sm">Progreso</p>
+          </div>
+        </div>
+        <button onClick={() => { if(confirm('¿Eliminar objetivo?')) onDelete(goal.id); }} className="p-3 bg-red-500/10 text-red-500 rounded-full hover:bg-red-500/20"><Trash2 size={24} /></button>
+      </div>
+
+      <div className="flex-1 bg-slate-800 rounded-3xl p-4 shadow-xl flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <button onClick={() => changeMonth(-1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
+          <h3 className="text-2xl font-bold capitalize text-white">{monthName} {y}</h3>
+          <button onClick={() => changeMonth(1)} className="p-4 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
+        </div>
+        
+        <div className="grid grid-cols-7 gap-2 text-center mb-2 text-slate-400 text-lg font-medium"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
+        
+        <div className="grid grid-cols-7 gap-2 flex-1 auto-rows-fr">
+          {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
+            const inRange = dateStr >= goal.startDate && dateStr <= goal.endDate; const isCompleted = goal.completedDates.includes(dateStr);
+            
+            return (
+              <button 
+                key={day} 
+                onClick={() => toggleDay(day)} 
+                disabled={!inRange} 
+                className={`w-full h-full min-h-[50px] rounded-xl flex items-center justify-center text-xl font-bold relative transition-all active:scale-95
+                  ${inRange ? 'bg-indigo-900/30 text-indigo-200 border-2 border-indigo-500/30' : 'text-slate-700'}
+                  ${!inRange ? 'opacity-30' : ''}
+                `}
+              >
+                {day}
+                {isCompleted && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-indigo-500/20 rounded-xl">
+                    <X className="text-red-500 w-full h-full p-2 drop-shadow-lg" strokeWidth={3} />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

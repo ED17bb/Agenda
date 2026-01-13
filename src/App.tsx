@@ -248,7 +248,7 @@ const MainMenu = ({ onNavigate }: { onNavigate: (view: string) => void }) => {
   );
 };
 
-// 2. VISTA DEL DÍA (Con opción de tachar)
+// 2. VISTA DEL DÍA
 const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], onToggleEvent: (id: string) => void, onBack: () => void }) => {
   const today = getTodayStr();
   const todaysEvents = events.filter(e => isSameDate(e.date, today, e.category));
@@ -305,7 +305,7 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
   );
 };
 
-// 3. AGENDAR (Almanaque optimizado y borrar eventos)
+// 3. AGENDAR (NUEVO DISEÑO FLAT & FULL WIDTH)
 const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events: AgendaEvent[], onSaveEvent: (e: AgendaEvent) => void, onDeleteEvent: (id: string) => void, onBack: () => void }) => {
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
@@ -344,27 +344,34 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
-    <div className="min-h-screen bg-dark-900 p-2 flex flex-col">
-      <div className="flex items-center gap-4 mb-4 px-2 mt-2">
+    <div className="min-h-screen bg-dark-900 flex flex-col">
+      {/* Cabecera pegajosa */}
+      <div className="flex items-center gap-4 px-4 py-4 bg-dark-900 z-20">
         <button onClick={viewState === 'form' ? () => setViewState('calendar') : onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
-        <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles'}</h2>
+        <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles del Evento'}</h2>
       </div>
       
       {viewState === 'calendar' ? (
-        <div className="flex-1 bg-slate-800 shadow-xl animate-fade-in flex flex-col w-full overflow-hidden">
-          <div className="flex justify-between items-center p-4 bg-slate-900/50">
-            <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronLeft size={24}/></button>
-            <h3 className="text-2xl font-bold capitalize">{monthName} {year}</h3>
-            <button onClick={() => changeMonth(1)} className="p-3 hover:bg-slate-700 rounded-full"><ChevronRight size={24}/></button>
+        <div className="flex-1 flex flex-col w-full animate-fade-in">
+          {/* Navegación del Mes Minimalista */}
+          <div className="flex justify-between items-center px-6 py-4">
+            <h3 className="text-4xl font-bold capitalize text-white">{monthName} <span className="text-slate-600 text-2xl">{year}</span></h3>
+            <div className="flex gap-2">
+              <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-slate-800 rounded-full"><ChevronLeft size={24}/></button>
+              <button onClick={() => changeMonth(1)} className="p-3 hover:bg-slate-800 rounded-full"><ChevronRight size={24}/></button>
+            </div>
           </div>
           
-          {/* Header estático para evitar error de claves duplicadas 'M' */}
-          <div className="grid grid-cols-7 text-center py-2 bg-slate-900/30 text-slate-400 text-lg font-medium border-b border-slate-700">
-            <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+          {/* Días de la semana */}
+          <div className="grid grid-cols-7 text-center mb-2">
+            {['L','M','M','J','V','S','D'].map(d => (
+              <div key={d} className="text-slate-500 font-bold text-sm">{d}</div>
+            ))}
           </div>
           
-          <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-slate-800 gap-px border-t border-slate-700 bg-slate-700">
-            {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} className="bg-slate-800" />)}
+          {/* Grilla de Días FULL WIDTH */}
+          <div className="grid grid-cols-7 flex-1 content-start px-2 gap-y-2">
+            {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} />)}
             {Array.from({ length: days }).map((_, i) => {
               const day = i + 1;
               const checkM = (currentMonth.getMonth() + 1).toString().padStart(2, '0');
@@ -372,24 +379,37 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
               const fullDate = `${year}-${checkM}-${checkD}`;
               const isSelected = fullDate === selectedDate;
               const hasEvents = events.some(e => isSameDate(e.date, fullDate, e.category));
+              
+              // Verificación simple de "hoy"
+              const todayStr = getTodayStr();
+              const isToday = fullDate === todayStr;
+
               return (
                 <button 
                   key={day} 
                   onClick={() => handleDaySelect(day)} 
-                  className={`flex flex-col items-center justify-center font-bold text-xl transition-all relative bg-slate-800 w-full h-full
-                    ${isSelected ? 'bg-cyan-500 text-white z-10' : 'hover:bg-slate-700 text-slate-300'}
-                  `}
+                  className="relative aspect-square flex flex-col items-center justify-center group"
                 >
-                  <span>{day}</span>
-                  {hasEvents && !isSelected && <div className="w-2 h-2 bg-cyan-400 rounded-full mt-1"></div>}
-                  {hasEvents && isSelected && <div className="w-2 h-2 bg-white rounded-full mt-1"></div>}
+                  {/* Círculo de selección o hoy */}
+                  <div className={`
+                    w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold transition-all
+                    ${isSelected ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 
+                      isToday ? 'text-cyan-400 bg-cyan-950/30' : 'text-slate-300 group-hover:bg-slate-800'}
+                  `}>
+                    {day}
+                  </div>
+                  
+                  {/* Indicador de evento (punto) */}
+                  {hasEvents && (
+                    <div className={`w-1.5 h-1.5 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-cyan-500'}`}></div>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
       ) : (
-        <div className="animate-slide-up space-y-6 px-4 pt-4">
+        <div className="animate-slide-up space-y-6 px-4 pb-10">
           <div className="bg-slate-800 p-4 rounded-3xl border border-slate-700">
             <h4 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Ya agendado para hoy:</h4>
             {eventsOnSelectedDate.length === 0 ? (

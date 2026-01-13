@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
-// Nota: Quitamos 'type FirebaseOptions' para evitar errores de linter
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -47,11 +46,11 @@ import {
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE (SIMPLIFICADA) ---
+// --- CONFIGURACIÓN DE FIREBASE (LIMPIA) ---
 // =================================================================
 
-// 1. Configuración local (Reemplaza con tus datos reales)
-const firebaseConfig = {
+// 1. Configuración manual de respaldo
+const fallbackConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
   projectId: "agenda-ed",
@@ -60,21 +59,21 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Selección de configuración
-let appConfig = localFirebaseConfig;
+// 2. Determinar configuración final
+let currentConfig = fallbackConfig;
 
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    appConfig = JSON.parse(__firebase_config);
+    currentConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  console.warn('Error cargando config externa, usando local');
+  console.warn('Usando configuración local');
 }
 
 // 3. Inicializar
-const app = initializeApp(appConfig);
+const app = initializeApp(currentConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 

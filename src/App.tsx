@@ -20,11 +20,11 @@ import {
   Trophy,
   Gift,
   Download,
-  Loader2 // <--- AGREGADO: Importación faltante
+  Loader2
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
-import { initializeApp } from 'firebase/app';
+import { initializeApp, FirebaseOptions } from 'firebase/app';
 import { 
   getAuth, 
   signInAnonymously, 
@@ -39,12 +39,17 @@ import {
   setDoc, 
   deleteDoc, 
   onSnapshot, 
-  query 
+  query,
+  QuerySnapshot,
+  DocumentData,
+  FirestoreError
 } from 'firebase/firestore';
 
 // =================================================================
-// --- TUS CREDENCIALES DE FIREBASE ---
+// --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
+
+// 1. Define tu configuración aquí (Reemplaza con tus datos reales de la consola de Firebase)
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -54,26 +59,29 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-let firebaseConfig;
-try {
-  // @ts-ignore
-  if (typeof __firebase_config !== 'undefined') {
+// 2. Función segura para obtener la configuración
+const getFirebaseConfig = (): FirebaseOptions => {
+  try {
     // @ts-ignore
-    firebaseConfig = JSON.parse(__firebase_config);
-  } else {
-    firebaseConfig = YOUR_FIREBASE_CONFIG;
+    if (typeof __firebase_config !== 'undefined') {
+      // @ts-ignore
+      return JSON.parse(__firebase_config);
+    }
+  } catch (e) {
+    console.warn('Usando configuración local de respaldo');
   }
-} catch (e) {
-  firebaseConfig = YOUR_FIREBASE_CONFIG;
-}
+  return YOUR_FIREBASE_CONFIG;
+};
 
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
+// 3. Inicializar
+const app = initializeApp(getFirebaseConfig());
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// CORRECCIÓN: Usamos un ID fijo y seguro para evitar errores de ruta en Firestore
-const appId = 'agenda-ed-v1';
+// 4. ID de la App sanitizado para Firestore
+// @ts-ignore
+const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-ed-v1';
+const appId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '_');
 
 // --- TIPOS DE DATOS ---
 
@@ -345,7 +353,7 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
                 <div className="w-full">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`text-xs px-2 py-1 rounded-md text-white font-medium flex items-center gap-1 ${cat?.color || 'bg-slate-600'}`}>
-                      {/* CORRECCIÓN: Renderizado seguro de componentes */}
+                      {/* Renderizado seguro */}
                       {cat && React.createElement(cat.icon, { size: 16 })} {cat?.label || 'General'}
                     </span>
                   </div>
@@ -483,7 +491,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
               {CATEGORIES.map(cat => (
                 <button key={cat.id} onClick={() => setCategory(cat.id)} className={`p-3 rounded-xl flex flex-col items-center gap-2 border transition-all ${category === cat.id ? 'border-cyan-500 bg-cyan-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-400'}`}>
                   <div className={`${category === cat.id ? 'text-cyan-400' : ''}`}>
-                    {/* CORRECCIÓN: Renderizado seguro */}
+                    {/* Renderizado seguro */}
                     {React.createElement(cat.icon, { size: 16 })}
                   </div>
                   <span className="text-xs">{cat.label}</span>
@@ -626,6 +634,7 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
       <div className="text-center mb-2 text-xs font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
+        {/* CORRECCIÓN: Mostramos TODOS los días del mes */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
           const isCompleted = goal.completedDates.includes(dateStr);
@@ -845,24 +854,24 @@ export default function App() {
 
     // Listen EVENTS
     const eventsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'events'));
-    const unsubEvents = onSnapshot(eventsQuery, (snapshot) => {
+    const unsubEvents = onSnapshot(eventsQuery, (snapshot: QuerySnapshot<DocumentData>) => {
       const loadedEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AgendaEvent));
       setEvents(loadedEvents);
-    }, (err) => console.error("Error events:", err));
+    }, (err: FirestoreError) => console.error("Error events:", err));
 
     // Listen NOTES
     const notesQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'notes'));
-    const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
+    const unsubNotes = onSnapshot(notesQuery, (snapshot: QuerySnapshot<DocumentData>) => {
       const loadedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StickyNote));
       setNotes(loadedNotes);
-    }, (err) => console.error("Error notes:", err));
+    }, (err: FirestoreError) => console.error("Error notes:", err));
 
     // Listen GOALS
     const goalsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'goals'));
-    const unsubGoals = onSnapshot(goalsQuery, (snapshot) => {
+    const unsubGoals = onSnapshot(goalsQuery, (snapshot: QuerySnapshot<DocumentData>) => {
       const loadedGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal));
       setGoals(loadedGoals);
-    }, (err) => console.error("Error goals:", err));
+    }, (err: FirestoreError) => console.error("Error goals:", err));
 
     return () => {
       unsubEvents();

@@ -19,8 +19,61 @@ import {
   AlignLeft,
   Trophy,
   Gift,
-  Download
+  Download,
+  Loader2 // <--- AGREGADO: Importación faltante
 } from 'lucide-react';
+
+// --- FIREBASE IMPORTS ---
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInAnonymously, 
+  onAuthStateChanged,
+  User as FirebaseUser,
+  signInWithCustomToken 
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  query 
+} from 'firebase/firestore';
+
+// =================================================================
+// --- TUS CREDENCIALES DE FIREBASE ---
+// =================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
+  authDomain: "agenda-ed.firebaseapp.com",
+  projectId: "agenda-ed",
+  storageBucket: "agenda-ed.firebasestorage.app",
+  messagingSenderId: "923936510294",
+  appId: "1:923936510294:web:f0e757560790428f9b06f7"
+};
+
+let firebaseConfig;
+try {
+  // @ts-ignore
+  if (typeof __firebase_config !== 'undefined') {
+    // @ts-ignore
+    firebaseConfig = JSON.parse(__firebase_config);
+  } else {
+    firebaseConfig = YOUR_FIREBASE_CONFIG;
+  }
+} catch (e) {
+  firebaseConfig = YOUR_FIREBASE_CONFIG;
+}
+
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// CORRECCIÓN: Usamos un ID fijo y seguro para evitar errores de ruta en Firestore
+const appId = 'agenda-ed-v1';
 
 // --- TIPOS DE DATOS ---
 
@@ -55,6 +108,13 @@ interface Goal {
   startDate: string;
   endDate: string;
   completedDates: string[];
+}
+
+interface CategoryDef {
+  id: string;
+  label: string;
+  icon: React.ElementType; 
+  color: string;
 }
 
 // --- CONFIGURACIÓN ESTÉTICA ---
@@ -93,7 +153,6 @@ const StyleInjector = () => {
     document.body.style.color = '#f8fafc';
     document.body.style.fontFamily = "'Outfit', sans-serif";
 
-    // --- PWA SETUP ---
     const setupPWA = () => {
       let linkIcon = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
       if (!linkIcon) {
@@ -124,10 +183,7 @@ const StyleInjector = () => {
     
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(
-          (registration) => console.log('SW registrado: ', registration.scope),
-          (err) => console.log('SW error: ', err)
-        );
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
       });
     }
 
@@ -139,13 +195,13 @@ const StyleInjector = () => {
 
 // --- CONSTANTES ---
 
-const CATEGORIES = [
-  { id: 'trabajo', label: 'Trabajo', icon: <Briefcase size={16} />, color: 'bg-blue-500' },
-  { id: 'personal', label: 'Personal', icon: <Star size={16} />, color: 'bg-purple-500' },
-  { id: 'salud', label: 'Salud', icon: <Heart size={16} />, color: 'bg-rose-500' },
-  { id: 'estudio', label: 'Estudio', icon: <BookOpen size={16} />, color: 'bg-emerald-500' },
-  { id: 'pagos', label: 'Pagos', icon: <DollarSign size={16} />, color: 'bg-amber-500' },
-  { id: 'cumpleaños', label: 'Cumpleaños', icon: <Cake size={16} />, color: 'bg-pink-500' },
+const CATEGORIES: CategoryDef[] = [
+  { id: 'trabajo', label: 'Trabajo', icon: Briefcase, color: 'bg-blue-500' },
+  { id: 'personal', label: 'Personal', icon: Star, color: 'bg-purple-500' },
+  { id: 'salud', label: 'Salud', icon: Heart, color: 'bg-rose-500' },
+  { id: 'estudio', label: 'Estudio', icon: BookOpen, color: 'bg-emerald-500' },
+  { id: 'pagos', label: 'Pagos', icon: DollarSign, color: 'bg-amber-500' },
+  { id: 'cumpleaños', label: 'Cumpleaños', icon: Cake, color: 'bg-pink-500' },
 ];
 
 const STICKY_COLORS = [
@@ -199,7 +255,7 @@ const MainMenu = ({ onNavigate }: { onNavigate: (view: string) => void }) => {
       </h1>
 
       <div className="grid gap-6 w-full max-w-md z-10">
-        {deferredPrompt && (
+        {!!deferredPrompt && (
           <button onClick={handleInstallClick} className="bg-white/10 border border-cyan-500/50 text-cyan-400 p-3 rounded-2xl flex items-center justify-center gap-2 mb-2 font-bold animate-pulse">
             <Download size={20} /> Instalar App
           </button>
@@ -288,7 +344,10 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
               >
                 <div className="w-full">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-xs px-2 py-1 rounded-md text-white font-medium flex items-center gap-1 ${cat?.color || 'bg-slate-600'}`}>{cat?.icon} {cat?.label || 'General'}</span>
+                    <span className={`text-xs px-2 py-1 rounded-md text-white font-medium flex items-center gap-1 ${cat?.color || 'bg-slate-600'}`}>
+                      {/* CORRECCIÓN: Renderizado seguro de componentes */}
+                      {cat && React.createElement(cat.icon, { size: 16 })} {cat?.label || 'General'}
+                    </span>
                   </div>
                   <h3 className={`text-xl font-bold text-white break-words w-full ${event.completed ? 'line-through text-slate-400' : ''}`}>
                     {event.title}
@@ -305,7 +364,7 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
   );
 };
 
-// 3. AGENDAR (Almanaque con Tarjeta Flotante y Cuadrados Perfectos)
+// 3. AGENDAR
 const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events: AgendaEvent[], onSaveEvent: (e: AgendaEvent) => void, onDeleteEvent: (id: string) => void, onBack: () => void }) => {
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
@@ -420,7 +479,17 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
           <div className="bg-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Fecha</label><div className="text-xl font-bold text-white mt-1">{selectedDate}</div></div>
             <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">¿Qué vamos a hacer?</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej. Tarea importante..." className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mt-2 text-white focus:ring-2 focus:ring-cyan-500 outline-none" /></div>
-            <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Categoría</label><div className="grid grid-cols-3 gap-2 mt-2">{CATEGORIES.map(cat => (<button key={cat.id} onClick={() => setCategory(cat.id)} className={`p-3 rounded-xl flex flex-col items-center gap-2 border transition-all ${category === cat.id ? 'border-cyan-500 bg-cyan-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-400'}`}><div className={`${category === cat.id ? 'text-cyan-400' : ''}`}>{cat.icon}</div><span className="text-xs">{cat.label}</span></button>))}</div></div>
+            <div><label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Categoría</label><div className="grid grid-cols-3 gap-2 mt-2">
+              {CATEGORIES.map(cat => (
+                <button key={cat.id} onClick={() => setCategory(cat.id)} className={`p-3 rounded-xl flex flex-col items-center gap-2 border transition-all ${category === cat.id ? 'border-cyan-500 bg-cyan-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-400'}`}>
+                  <div className={`${category === cat.id ? 'text-cyan-400' : ''}`}>
+                    {/* CORRECCIÓN: Renderizado seguro */}
+                    {React.createElement(cat.icon, { size: 16 })}
+                  </div>
+                  <span className="text-xs">{cat.label}</span>
+                </button>
+              ))}
+            </div></div>
             <button onClick={handleSave} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"><Save size={20} /> Guardar Evento</button>
           </div>
         </div>
@@ -557,7 +626,6 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
       <div className="text-center mb-2 text-xs font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
-        {/* CORRECCIÓN: Mostramos TODOS los días del mes */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
           const isCompleted = goal.completedDates.includes(dateStr);
@@ -721,43 +789,26 @@ const StickyBoardView = ({ notes, onSaveNote, onDeleteNote, onBack }: { notes: S
 
 export default function App() {
   const [view, setView] = useState('home'); 
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [notes, setNotes] = useState<StickyNote[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
 
-  // Manejo del Historial del Navegador (Botón Atrás Físico)
+  // Manejo del Historial
   useEffect(() => {
-    // Al cargar, aseguramos que el estado actual sea 'home'
     window.history.replaceState({ view: 'home' }, '', '');
-
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state;
       if (state && state.view) {
         setView(state.view);
       } else {
-        // Fallback a home si no hay estado
         setView('home');
       }
     };
-
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  useEffect(() => {
-    const savedEvents = localStorage.getItem('agenda_ed_events');
-    const savedNotes = localStorage.getItem('agenda_ed_notes');
-    const savedGoals = localStorage.getItem('agenda_ed_goals');
-    if (savedEvents) setEvents(JSON.parse(savedEvents));
-    if (savedNotes) setNotes(JSON.parse(savedNotes));
-    if (savedGoals) setGoals(JSON.parse(savedGoals));
-  }, []);
-
-  useEffect(() => { localStorage.setItem('agenda_ed_events', JSON.stringify(events)); }, [events]);
-  useEffect(() => { localStorage.setItem('agenda_ed_notes', JSON.stringify(notes)); }, [notes]);
-  useEffect(() => { localStorage.setItem('agenda_ed_goals', JSON.stringify(goals)); }, [goals]);
-
-  // Función para navegar añadiendo al historial
   const navigateTo = (newView: string) => {
     if (newView !== view) {
       window.history.pushState({ view: newView }, '', '');
@@ -765,20 +816,104 @@ export default function App() {
     }
   };
 
-  // Función para volver atrás (simula el botón físico)
   const goBack = () => {
     window.history.back();
   };
 
-  const handleSaveEvent = (newEvent: AgendaEvent) => setEvents([...events, newEvent]);
-  const handleDeleteEvent = (id: string) => setEvents(events.filter(e => e.id !== id));
-  const handleToggleEvent = (id: string) => setEvents(events.map(e => e.id === id ? { ...e, completed: !e.completed } : e));
+  // 1. AUTH & INIT (FIREBASE)
+  useEffect(() => {
+    const initAuth = async () => {
+      // @ts-ignore
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+         // @ts-ignore
+        await signInWithCustomToken(auth, __initial_auth_token);
+      } else {
+        await signInAnonymously(auth);
+      }
+    };
+    initAuth();
 
-  const handleSaveNote = (updatedNote: StickyNote) => { const exists = notes.find(n => n.id === updatedNote.id); if (exists) setNotes(notes.map(n => n.id === updatedNote.id ? updatedNote : n)); else setNotes([...notes, updatedNote]); };
-  const handleDeleteNote = (id: string) => setNotes(notes.filter(n => n.id !== id));
-  const handleSaveGoal = (newGoal: Goal) => setGoals([...goals, newGoal]);
-  const handleUpdateGoal = (updatedGoal: Goal) => setGoals(goals.map(g => g.id === updatedGoal.id ? updatedGoal : g));
-  const handleDeleteGoal = (id: string) => setGoals(goals.filter(g => g.id !== id));
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. DATA SYNC (FIREBASE)
+  useEffect(() => {
+    if (!user) return;
+
+    // Listen EVENTS
+    const eventsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'events'));
+    const unsubEvents = onSnapshot(eventsQuery, (snapshot) => {
+      const loadedEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AgendaEvent));
+      setEvents(loadedEvents);
+    }, (err) => console.error("Error events:", err));
+
+    // Listen NOTES
+    const notesQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'notes'));
+    const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
+      const loadedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StickyNote));
+      setNotes(loadedNotes);
+    }, (err) => console.error("Error notes:", err));
+
+    // Listen GOALS
+    const goalsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'goals'));
+    const unsubGoals = onSnapshot(goalsQuery, (snapshot) => {
+      const loadedGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal));
+      setGoals(loadedGoals);
+    }, (err) => console.error("Error goals:", err));
+
+    return () => {
+      unsubEvents();
+      unsubNotes();
+      unsubGoals();
+    };
+  }, [user]);
+
+
+  // 3. HANDLERS (FIREBASE WRITES)
+  
+  const handleSaveEvent = async (newEvent: AgendaEvent) => {
+    if (!user) return;
+    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'events', newEvent.id), newEvent);
+  };
+  const handleDeleteEvent = async (id: string) => {
+    if (!user) return;
+    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'events', id));
+  };
+  const handleToggleEvent = async (id: string) => {
+    if (!user) return;
+    const evt = events.find(e => e.id === id);
+    if (evt) {
+      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'events', id), { ...evt, completed: !evt.completed });
+    }
+  };
+
+  const handleSaveNote = async (updatedNote: StickyNote) => {
+    if (!user) return;
+    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'notes', updatedNote.id), updatedNote);
+  };
+  const handleDeleteNote = async (id: string) => {
+    if (!user) return;
+    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'notes', id));
+  };
+
+  const handleSaveGoal = async (newGoal: Goal) => {
+    if (!user) return;
+    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'goals', newGoal.id), newGoal);
+  };
+  const handleUpdateGoal = async (updatedGoal: Goal) => {
+    if (!user) return;
+    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'goals', updatedGoal.id), updatedGoal);
+  };
+  const handleDeleteGoal = async (id: string) => {
+    if (!user) return;
+    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'goals', id));
+  };
+
+
+  if (!user) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-brand-500"><Loader2 className="animate-spin" size={48} /></div>;
 
   return (
     <div className="font-sans text-slate-100 bg-slate-950 min-h-screen selection:bg-brand-500/30">

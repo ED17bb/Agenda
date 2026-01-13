@@ -16,11 +16,12 @@ import {
   DollarSign,
   Star,
   Cake,
-  Check,
+  // Check, <--- ELIMINADO PORQUE NO SE USABA
   List,
   AlignLeft,
   Trophy,
-  Gift
+  Gift,
+  Download
 } from 'lucide-react';
 
 // --- TIPOS DE DATOS ---
@@ -64,7 +65,7 @@ const StyleInjector = () => {
     if (!document.getElementById('font-inter')) {
       const link = document.createElement('link');
       link.id = 'font-inter';
-      link.href = 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap'; // Added weight 900 for title
+      link.href = 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap'; 
       link.rel = 'stylesheet';
       document.head.appendChild(link);
     }
@@ -93,6 +94,51 @@ const StyleInjector = () => {
     document.body.style.backgroundColor = '#0f172a';
     document.body.style.color = '#f8fafc';
     document.body.style.fontFamily = "'Outfit', sans-serif";
+
+    // --- PWA SETUP ---
+    const setupPWA = () => {
+      // Favicon
+      let linkIcon = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!linkIcon) {
+        linkIcon = document.createElement('link');
+        linkIcon.rel = 'icon';
+        document.head.appendChild(linkIcon);
+      }
+      linkIcon.href = '/icono.png'; 
+
+      // Manifest Link
+      let linkManifest = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
+      if (!linkManifest) {
+        linkManifest = document.createElement('link');
+        linkManifest.rel = 'manifest';
+        linkManifest.href = '/manifest.json';
+        document.head.appendChild(linkManifest);
+      }
+
+      // Theme Color
+      let metaTheme = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
+      if (!metaTheme) {
+        metaTheme = document.createElement('meta');
+        metaTheme.name = 'theme-color';
+        document.head.appendChild(metaTheme);
+      }
+      metaTheme.content = '#0f172a';
+    };
+
+    setupPWA();
+    
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(
+          (registration) => console.log('SW registrado: ', registration.scope),
+          (err) => console.log('SW error: ', err)
+        );
+      });
+    }
+
+    document.title = "Agenda ED";
+
   }, []);
   return null;
 };
@@ -127,17 +173,51 @@ const isSameDate = (eventDate: string, targetDate: string, category: string) => 
 
 // --- PANTALLAS ---
 
-// 1. MENÚ PRINCIPAL (Modificado)
+// 1. MENÚ PRINCIPAL
 const MainMenu = ({ onNavigate }: { onNavigate: (view: string) => void }) => {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('Usuario aceptó instalar');
+        }
+        setDeferredPrompt(null);
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in relative">
       
-      {/* TÍTULO 2026 */}
+      {/* TÍTULO DINÁMICO: Muestra el año actual automáticamente */}
       <h1 className="text-8xl font-black text-cyan-400 mb-12 tracking-tighter drop-shadow-[0_0_15px_rgba(34,211,238,0.6)] select-none">
-        2026
+        {new Date().getFullYear()}
       </h1>
 
       <div className="grid gap-6 w-full max-w-md z-10">
+        
+        {/* BOTÓN INSTALAR */}
+        {deferredPrompt && (
+          <button 
+            onClick={handleInstallClick}
+            className="bg-white/10 border border-cyan-500/50 text-cyan-400 p-3 rounded-2xl flex items-center justify-center gap-2 mb-2 font-bold animate-pulse"
+          >
+            <Download size={20} /> Instalar App
+          </button>
+        )}
+
         <button 
           onClick={() => onNavigate('today')}
           className="group relative overflow-hidden bg-slate-800 p-6 rounded-3xl border border-slate-700 hover:border-cyan-400 transition-all duration-300 text-left shadow-2xl"
@@ -158,7 +238,6 @@ const MainMenu = ({ onNavigate }: { onNavigate: (view: string) => void }) => {
           <p className="text-slate-400 text-sm">Programar eventos y alarmas</p>
         </button>
 
-        {/* MÓDULOS EXTRA */}
         <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={() => onNavigate('birthdays')}
@@ -190,7 +269,6 @@ const MainMenu = ({ onNavigate }: { onNavigate: (view: string) => void }) => {
         </button>
       </div>
 
-      {/* FIRMA */}
       <div className="fixed bottom-6 right-6 text-slate-600 font-bold text-sm tracking-widest opacity-50 hover:opacity-100 transition-opacity cursor-default">
         By ED
       </div>

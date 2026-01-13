@@ -29,7 +29,7 @@ interface AgendaEvent {
   date: string;
   title: string;
   category: string;
-  completed: boolean; // NUEVO: Para poder tachar eventos
+  completed: boolean; 
 }
 
 interface TodoItem {
@@ -344,7 +344,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
 
   return (
-    <div className="min-h-screen bg-dark-900 p-2 flex flex-col"> {/* Padding muy reducido (p-2) para maximizar espacio */}
+    <div className="min-h-screen bg-dark-900 p-2 flex flex-col">
       <div className="flex items-center gap-4 mb-4 px-2 mt-2">
         <button onClick={viewState === 'form' ? () => setViewState('calendar') : onBack} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
         <h2 className="text-2xl font-bold text-white">{viewState === 'calendar' ? 'Selecciona Fecha' : 'Detalles'}</h2>
@@ -362,8 +362,8 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
             <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
           </div>
           
-          <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-slate-800">
-            {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} className="border-r border-b border-slate-700/50" />)}
+          <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-slate-800 gap-px border-t border-slate-700 bg-slate-700"> {/* gap-px creates borders */}
+            {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} className="bg-slate-800" />)}
             {Array.from({ length: days }).map((_, i) => {
               const day = i + 1;
               const checkM = (currentMonth.getMonth() + 1).toString().padStart(2, '0');
@@ -375,7 +375,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                 <button 
                   key={day} 
                   onClick={() => handleDaySelect(day)} 
-                  className={`flex flex-col items-center justify-center font-bold text-xl transition-all relative border-r border-b border-slate-700/50
+                  className={`flex flex-col items-center justify-center font-bold text-xl transition-all relative bg-slate-800
                     ${isSelected ? 'bg-cyan-500 text-white z-10' : 'hover:bg-slate-700 text-slate-300'}
                   `}
                 >

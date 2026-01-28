@@ -23,7 +23,8 @@ import {
   Loader2,
   LogOut,
   LogIn,
-  Bell
+  Bell,
+  AlertTriangle // Icono para errores
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -35,7 +36,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInWithCustomToken // <--- AGREGADO: Esto faltaba y causaba el error
+  signInWithCustomToken
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -51,7 +52,10 @@ import {
 // --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
 
-// 1. Configuración de respaldo (REEMPLAZA ESTO CON TUS DATOS REALES)
+// ⚠️ ¡ATENCIÓN ERNESTO! ⚠️
+// Debes reemplazar estos valores con los de tu proyecto en Firebase Console.
+// Si dejas "AIzaSy...", el login fallará.
+
 const FALLBACK_CONFIG = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -61,7 +65,7 @@ const FALLBACK_CONFIG = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Selección de configuración
+// Selección de configuración
 let finalConfig = FALLBACK_CONFIG;
 
 try {
@@ -71,20 +75,20 @@ try {
     finalConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  // Ignorar error y usar la local
+  // Uso config local
 }
 
-// 3. Inicializar Firebase
+// Inicializar
 const app = initializeApp(finalConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 4. ID de la App sanitizado
+// ID de la App sanitizado
 // @ts-ignore
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-ed-v1';
 const appId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '_');
 
-// --- UTILIDAD: ABRIR GOOGLE CALENDAR ---
+// --- UTILIDADES ---
 const openGoogleCalendar = (title: string, date: string) => {
   const dateStr = date.replace(/-/g, '');
   const start = dateStr;
@@ -243,12 +247,12 @@ const isSameDate = (eventDate: string, targetDate: string, category: string) => 
 // --- PANTALLAS ---
 
 // 0. PANTALLA DE LOGIN
-const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
+const LoginScreen = ({ onLogin, error }: { onLogin: () => void, error: string | null }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-dark-900 animate-fade-in relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-brand-500/10 to-transparent"></div>
       
-      <div className="z-10 text-center">
+      <div className="z-10 text-center w-full max-w-md">
         <div className="w-32 h-32 mx-auto mb-8 rounded-3xl shadow-2xl shadow-brand-500/20 overflow-hidden">
              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
         </div>
@@ -258,11 +262,22 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
 
         <button 
           onClick={onLogin}
-          className="bg-white text-slate-900 px-8 py-4 rounded-xl font-bold flex items-center gap-3 shadow-lg hover:scale-105 transition-transform active:scale-95 mx-auto"
+          className="bg-white text-slate-900 px-8 py-4 rounded-xl font-bold flex items-center gap-3 shadow-lg hover:scale-105 transition-transform active:scale-95 mx-auto w-full justify-center"
         >
           <LogIn className="text-brand-600" />
           Ingresar con Google
         </button>
+        
+        {/* VISOR DE ERRORES MEJORADO */}
+        {error && (
+          <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-200 text-sm text-left flex gap-3 items-start animate-fade-in">
+            <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="font-bold text-red-400 mb-1">No se pudo iniciar sesión:</p>
+              <p className="opacity-90">{error}</p>
+            </div>
+          </div>
+        )}
         
         <p className="mt-8 text-xs text-slate-600">Almacenamiento seguro en la nube</p>
       </div>
@@ -739,7 +754,7 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
 };
 
 const GoalDetailView = ({ goal, onUpdate, onDelete, onBack }: { goal: Goal, onUpdate: (g: Goal) => void, onDelete: (id: string) => void, onBack: () => void }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate] = useState(new Date());
   
   useEffect(() => { const start = new Date(goal.startDate + 'T00:00:00'); setCurrentDate(start); }, []);
   
@@ -890,6 +905,7 @@ export default function App() {
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [notes, setNotes] = useState<StickyNote[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Manejo del Historial
   useEffect(() => {
@@ -930,6 +946,11 @@ export default function App() {
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        setView('home');
+      } else {
+        setView('login');
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -966,12 +987,19 @@ export default function App() {
 
   // 3. HANDLERS (FIREBASE WRITES)
   const handleLogin = async () => {
+    setLoginError(null);
+    // Verificación de seguridad: ¿Usando keys de ejemplo?
+    if (app.options.apiKey?.startsWith("AIzaSy...")) {
+      setLoginError("¡Falta configuración! Debes editar el código y poner tus llaves reales de Firebase en la variable FALLBACK_CONFIG.");
+      return;
+    }
+
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed", error);
-      alert("Error al iniciar sesión con Google");
+      setLoginError(error.message || "Error desconocido al iniciar sesión");
     }
   };
 
@@ -1019,7 +1047,9 @@ export default function App() {
   };
 
 
-  if (view === 'login') return <LoginScreen onLogin={handleLogin} />;
+  if (view === 'login') return <LoginScreen onLogin={handleLogin} error={loginError} />;
+  
+  // Mientras verifica el usuario, puede mostrar loader
   if (!user && view !== 'login') return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-brand-500"><Loader2 className="animate-spin" size={48} /></div>;
 
   return (

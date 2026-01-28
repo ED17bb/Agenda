@@ -35,7 +35,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInWithCustomToken // <--- AGREGADO: Esencial para que no falle el inicio
+  signInWithCustomToken
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -48,10 +48,10 @@ import {
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE (LIMPIA) ---
+// --- CONFIGURACIÓN DE FIREBASE (SOLUCIÓN FINAL) ---
 // =================================================================
 
-// 1. Configuración manual (Pon tus datos aquí)
+// 1. Configuración de respaldo (REEMPLAZA ESTO CON TUS DATOS DE FIREBASE CONSOLE)
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -62,20 +62,20 @@ const firebaseConfig = {
 };
 
 // 2. Selección de configuración
-let activeConfig = manualConfig;
+let finalConfig = FALLBACK_CONFIG;
 
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    activeConfig = JSON.parse(__firebase_config);
+    finalConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  console.warn('Usando configuración local');
+  // Ignorar errores en entorno local
 }
 
-// 3. Inicializar
-const app = initializeApp(activeConfig);
+// 3. Inicializar Firebase
+const app = initializeApp(finalConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 

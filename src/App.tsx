@@ -35,7 +35,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInWithCustomToken
+  signInWithCustomToken // <--- AGREGADO: Esencial para que no falle el inicio
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -51,7 +51,7 @@ import {
 // --- CONFIGURACIÓN DE FIREBASE (LIMPIA) ---
 // =================================================================
 
-// 1. Configuración por defecto (Reemplaza con tus datos reales)
+// 1. Configuración manual (Pon tus datos aquí)
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -61,8 +61,8 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Selección de configuración (Sin variables duplicadas)
-let activeConfig = DEFAULT_CONFIG;
+// 2. Selección de configuración
+let activeConfig = manualConfig;
 
 try {
   // @ts-ignore
@@ -71,7 +71,7 @@ try {
     activeConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  console.warn('Usando configuración local por defecto');
+  console.warn('Usando configuración local');
 }
 
 // 3. Inicializar

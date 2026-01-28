@@ -48,10 +48,10 @@ import {
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE (SOLUCIÓN FINAL) ---
+// --- CONFIGURACIÓN DE FIREBASE (DEFINITIVA) ---
 // =================================================================
 
-// 1. Configuración de respaldo (REEMPLAZA ESTO CON TUS DATOS DE FIREBASE CONSOLE)
+// 1. Configuración por defecto
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -61,21 +61,21 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Selección de configuración
-let finalConfig = FALLBACK_CONFIG;
+// 2. Selección de configuración (Lógica lineal simple)
+let activeFirebaseConfig = DEFAULT_FIREBASE_OPTIONS;
 
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    finalConfig = JSON.parse(__firebase_config);
+    activeFirebaseConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  // Ignorar errores en entorno local
+  console.warn('Usando configuración local por defecto');
 }
 
-// 3. Inicializar Firebase
-const app = initializeApp(finalConfig);
+// 3. Inicializar
+const app = initializeApp(activeFirebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -571,7 +571,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
             <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-700">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${alarm ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                  <Loader2 size={20} className={alarm ? "" : "opacity-50"} /> 
+                  <Bell size={20} /> 
                 </div>
                 <div>
                   <p className="font-bold text-white">Google Calendar</p>

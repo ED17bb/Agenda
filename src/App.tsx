@@ -22,8 +22,7 @@ import {
   Download,
   Loader2,
   LogOut,
-  LogIn,
-  Bell
+  LogIn
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -48,11 +47,11 @@ import {
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE (DEFINITIVA) ---
+// --- CONFIGURACIÓN DE FIREBASE (SIMPLIFICADA AL EXTREMO) ---
 // =================================================================
 
-// 1. Configuración por defecto
-const firebaseConfig = {
+// 1. Definimos la configuración inicial directamente
+let finalConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
   projectId: "agenda-ed",
@@ -61,21 +60,19 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Selección de configuración (Lógica lineal simple)
-let activeFirebaseConfig = DEFAULT_FIREBASE_OPTIONS;
-
+// 2. Intentamos sobrescribir con la configuración del entorno si existe
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    activeFirebaseConfig = JSON.parse(__firebase_config);
+    finalConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  console.warn('Usando configuración local por defecto');
+  // Ignorar error y usar la local
 }
 
-// 3. Inicializar
-const app = initializeApp(activeFirebaseConfig);
+// 3. Inicializar Firebase usando UNICAMENTE finalConfig
+const app = initializeApp(finalConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -83,15 +80,6 @@ const db = getFirestore(app);
 // @ts-ignore
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-ed-v1';
 const appId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '_');
-
-// --- UTILIDAD: ABRIR GOOGLE CALENDAR ---
-const openGoogleCalendar = (title: string, date: string) => {
-  const dateStr = date.replace(/-/g, '');
-  const start = dateStr;
-  const end = dateStr;
-  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=Evento creado desde Agenda ED`;
-  window.open(url, '_blank');
-};
 
 // --- TIPOS DE DATOS ---
 
@@ -101,7 +89,6 @@ interface AgendaEvent {
   title: string;
   category: string;
   completed: boolean; 
-  alarmsEnabled?: boolean;
 }
 
 interface TodoItem {
@@ -402,12 +389,6 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
                       {/* Renderizado seguro */}
                       {cat && React.createElement(cat.icon, { size: 16 })} {cat?.label || 'General'}
                     </span>
-                    {/* INDICADOR VISUAL SI TIENE ALARMA */}
-                    {event.alarmsEnabled && (
-                      <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-md ml-auto">
-                        <Bell size={12} />
-                      </span>
-                    )}
                   </div>
                   <h3 className={`text-xl font-bold text-white break-words w-full ${event.completed ? 'line-through text-slate-400' : ''}`}>
                     {event.title}
@@ -429,7 +410,6 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('trabajo');
-  const [alarm, setAlarm] = useState(false);
   const [viewState, setViewState] = useState<'calendar' | 'form'>('calendar');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
@@ -462,18 +442,11 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
       date: selectedDate, 
       title, 
       category, 
-      completed: false,
-      alarmsEnabled: alarm 
+      completed: false
     };
     onSaveEvent(newEvent);
-    
-    if (alarm) {
-      openGoogleCalendar(title, selectedDate);
-    }
-
     setViewState('calendar');
     setTitle('');
-    setAlarm(false);
   };
   
   const eventsOnSelectedDate = events.filter(e => isSameDate(e.date, selectedDate, e.category));
@@ -538,7 +511,6 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cat?.color}`}></div>
                         <span className={`text-sm text-white truncate ${e.completed ? 'line-through text-slate-500' : ''}`}>{e.title}</span>
                         {e.category === 'cumpleaños' && <span className="text-xs">🎂</span>}
-                        {e.alarmsEnabled && <Bell size={12} className="text-amber-400" />}
                       </div>
                       <button 
                         onClick={() => { if(confirm('¿Borrar este evento?')) onDeleteEvent(e.id) }}
@@ -567,25 +539,6 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                 </button>
               ))}
             </div></div>
-            
-            <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-700">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${alarm ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                  <Bell size={20} /> 
-                </div>
-                <div>
-                  <p className="font-bold text-white">Google Calendar</p>
-                  <p className="text-xs text-slate-400">Abrir para guardar</p>
-                </div>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={alarm} 
-                onChange={(e) => setAlarm(e.target.checked)}
-                className="w-6 h-6 accent-amber-500 rounded cursor-pointer"
-              />
-            </div>
-
             <button onClick={handleSave} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"><Save size={20} /> Guardar Evento</button>
           </div>
         </div>

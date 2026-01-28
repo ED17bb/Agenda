@@ -20,7 +20,10 @@ import {
   Trophy,
   Gift,
   Download,
-  Loader2
+  Loader2,
+  LogOut, // Agregado
+  LogIn,  // Agregado
+  Bell    // Agregado
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -31,9 +34,7 @@ import {
   type User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
-  signOut,
-  signInWithCustomToken,
-  signInAnonymously
+  signOut
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -42,14 +43,17 @@ import {
   setDoc, 
   deleteDoc, 
   onSnapshot, 
-  query
+  query,
+  type QuerySnapshot,
+  type DocumentData,
+  type FirestoreError
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE (SIMPLIFICADA AL MÁXIMO) ---
+// --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
 
-// Define la configuración inicial
+// 1. Datos de respaldo (Reemplaza con los tuyos)
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -59,23 +63,25 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// Intenta sobrescribir con la configuración del entorno si existe
+// 2. Selección de configuración
+let firebaseConfig = fallbackConfig;
+
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    appConfig = JSON.parse(__firebase_config);
+    firebaseConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
   console.warn('Usando configuración local');
 }
 
-// Inicializar Firebase con la configuración resultante
-const app = initializeApp(appConfig);
+// 3. Inicializar
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ID de la App sanitizado
+// 4. ID de la App sanitizado
 // @ts-ignore
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-ed-v1';
 const appId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -401,7 +407,7 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
                     {/* INDICADOR VISUAL SI TIENE ALARMA */}
                     {event.alarmsEnabled && (
                       <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-md ml-auto">
-                        <Loader2 size={12} /> Google Cal
+                        <Bell size={12} />
                       </span>
                     )}
                   </div>
@@ -534,7 +540,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cat?.color}`}></div>
                         <span className={`text-sm text-white truncate ${e.completed ? 'line-through text-slate-500' : ''}`}>{e.title}</span>
                         {e.category === 'cumpleaños' && <span className="text-xs">🎂</span>}
-                        {e.alarmsEnabled && <Loader2 size={12} className="text-amber-400" />}
+                        {e.alarmsEnabled && <Bell size={12} className="text-amber-400" />}
                       </div>
                       <button 
                         onClick={() => { if(confirm('¿Borrar este evento?')) onDeleteEvent(e.id) }}
@@ -718,6 +724,7 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
       <div className="text-center mb-2 text-xs font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
+        {/* CORRECCIÓN: Mostramos TODOS los días del mes */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
           const isCompleted = goal.completedDates.includes(dateStr);
@@ -914,15 +921,6 @@ export default function App() {
 
   // 1. AUTH & INIT (FIREBASE)
   useEffect(() => {
-    const initAuth = async () => {
-      // @ts-ignore
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-         // @ts-ignore
-        await signInWithCustomToken(auth, __initial_auth_token);
-      }
-    };
-    initAuth();
-
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
@@ -933,18 +931,21 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
 
+    // Listen EVENTS
     const eventsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'events'));
     const unsubEvents = onSnapshot(eventsQuery, (snapshot) => {
       const loadedEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AgendaEvent));
       setEvents(loadedEvents);
     }, (err) => console.error("Error events:", err));
 
+    // Listen NOTES
     const notesQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'notes'));
     const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
       const loadedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StickyNote));
       setNotes(loadedNotes);
     }, (err) => console.error("Error notes:", err));
 
+    // Listen GOALS
     const goalsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'goals'));
     const unsubGoals = onSnapshot(goalsQuery, (snapshot) => {
       const loadedGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal));

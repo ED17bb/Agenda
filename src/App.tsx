@@ -20,9 +20,7 @@ import {
   Trophy,
   Gift,
   Download,
-  Loader2,
-  LogOut,
-  LogIn
+  Loader2
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -34,7 +32,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInWithCustomToken
+  signInWithCustomToken,
+  signInAnonymously
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -47,10 +46,10 @@ import {
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE (LIMPIA) ---
+// --- CONFIGURACIÓN DE FIREBASE (SIMPLIFICADA AL MÁXIMO) ---
 // =================================================================
 
-// 1. Configuración por defecto (Reemplaza con tus datos reales)
+// Define la configuración inicial
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -60,25 +59,23 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Selección de configuración
-let finalConfig = DEFAULT_CONFIG;
-
+// Intenta sobrescribir con la configuración del entorno si existe
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    finalConfig = JSON.parse(__firebase_config);
+    appConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  console.warn('Usando configuración local por defecto');
+  console.warn('Usando configuración local');
 }
 
-// 3. Inicializar
-const app = initializeApp(finalConfig);
+// Inicializar Firebase con la configuración resultante
+const app = initializeApp(appConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 4. ID de la App sanitizado
+// ID de la App sanitizado
 // @ts-ignore
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-ed-v1';
 const appId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -721,7 +718,6 @@ const GoalMiniCalendarPreview = ({ goal }: { goal: Goal }) => {
       <div className="text-center mb-2 text-xs font-bold uppercase text-slate-400">{currentDate.toLocaleString('es-ES', { month: 'short' })}</div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
-        {/* CORRECCIÓN: Mostramos TODOS los días del mes */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1; const mm = (m + 1).toString().padStart(2, '0'); const dd = day.toString().padStart(2, '0'); const dateStr = `${y}-${mm}-${dd}`;
           const isCompleted = goal.completedDates.includes(dateStr);

@@ -25,7 +25,7 @@ import {
   LogIn
 } from 'lucide-react';
 
-// --- FIREBASE IMPORTS (LIMPIOS) ---
+// --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -34,7 +34,6 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInAnonymously,
   signInWithCustomToken
 } from 'firebase/auth';
 import { 
@@ -48,10 +47,10 @@ import {
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE (SIMPLIFICADA) ---
+// --- CONFIGURACIÓN DE FIREBASE (LIMPIA) ---
 // =================================================================
 
-// 1. Configuración de respaldo (IMPORTANTE: Pon tus datos reales aquí)
+// 1. Configuración por defecto (Reemplaza con tus datos reales)
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -62,19 +61,20 @@ const firebaseConfig = {
 };
 
 // 2. Selección de configuración
-let activeConfig = localConfig;
+let finalConfig = DEFAULT_CONFIG;
+
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    activeConfig = JSON.parse(__firebase_config);
+    finalConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  console.warn('Usando configuración local');
+  console.warn('Usando configuración local por defecto');
 }
 
 // 3. Inicializar
-const app = initializeApp(activeConfig);
+const app = initializeApp(finalConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -343,11 +343,15 @@ const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void
         </button>
       </div>
 
-      <div className="fixed bottom-6 w-full px-6 flex justify-between items-center text-slate-600 left-0">
+      <div className="fixed bottom-6 right-6 text-slate-600 font-bold text-sm tracking-widest opacity-50 hover:opacity-100 transition-opacity cursor-default">
+        By ED
+      </div>
+
+      {/* Botón Logout */}
+      <div className="fixed bottom-6 left-6 text-slate-600">
          <button onClick={onLogout} className="flex items-center gap-1 text-xs font-bold hover:text-red-400 transition-colors">
             <LogOut size={14} /> Salir
          </button>
-         <span className="font-bold text-sm tracking-widest opacity-50 cursor-default">By ED</span>
       </div>
     </div>
   );
@@ -397,6 +401,12 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
                       {/* Renderizado seguro */}
                       {cat && React.createElement(cat.icon, { size: 16 })} {cat?.label || 'General'}
                     </span>
+                    {/* INDICADOR VISUAL SI TIENE ALARMA */}
+                    {event.alarmsEnabled && (
+                      <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-md ml-auto">
+                        <Loader2 size={12} /> Google Cal
+                      </span>
+                    )}
                   </div>
                   <h3 className={`text-xl font-bold text-white break-words w-full ${event.completed ? 'line-through text-slate-400' : ''}`}>
                     {event.title}
@@ -527,6 +537,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cat?.color}`}></div>
                         <span className={`text-sm text-white truncate ${e.completed ? 'line-through text-slate-500' : ''}`}>{e.title}</span>
                         {e.category === 'cumpleaños' && <span className="text-xs">🎂</span>}
+                        {e.alarmsEnabled && <Loader2 size={12} className="text-amber-400" />}
                       </div>
                       <button 
                         onClick={() => { if(confirm('¿Borrar este evento?')) onDeleteEvent(e.id) }}

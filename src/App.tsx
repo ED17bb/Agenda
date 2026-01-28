@@ -21,9 +21,9 @@ import {
   Gift,
   Download,
   Loader2,
-  LogOut, // Agregado
-  LogIn,  // Agregado
-  Bell    // Agregado
+  LogOut,
+  LogIn,
+  Bell
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -34,7 +34,8 @@ import {
   type User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
-  signOut
+  signOut,
+  signInWithCustomToken
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -43,17 +44,14 @@ import {
   setDoc, 
   deleteDoc, 
   onSnapshot, 
-  query,
-  type QuerySnapshot,
-  type DocumentData,
-  type FirestoreError
+  query
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE ---
+// --- CONFIGURACIÓN DE FIREBASE (LIMPIA) ---
 // =================================================================
 
-// 1. Datos de respaldo (Reemplaza con los tuyos)
+// 1. Configuración por defecto (Reemplaza con tus datos reales)
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -63,21 +61,21 @@ const firebaseConfig = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Selección de configuración
-let firebaseConfig = fallbackConfig;
+// 2. Selección de configuración (Sin variables duplicadas)
+let activeConfig = DEFAULT_CONFIG;
 
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    firebaseConfig = JSON.parse(__firebase_config);
+    activeConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  console.warn('Usando configuración local');
+  console.warn('Usando configuración local por defecto');
 }
 
 // 3. Inicializar
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(activeConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -921,6 +919,15 @@ export default function App() {
 
   // 1. AUTH & INIT (FIREBASE)
   useEffect(() => {
+    const initAuth = async () => {
+      // @ts-ignore
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+         // @ts-ignore
+        await signInWithCustomToken(auth, __initial_auth_token);
+      }
+    };
+    initAuth();
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
@@ -931,21 +938,18 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
 
-    // Listen EVENTS
     const eventsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'events'));
     const unsubEvents = onSnapshot(eventsQuery, (snapshot) => {
       const loadedEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AgendaEvent));
       setEvents(loadedEvents);
     }, (err) => console.error("Error events:", err));
 
-    // Listen NOTES
     const notesQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'notes'));
     const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
       const loadedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StickyNote));
       setNotes(loadedNotes);
     }, (err) => console.error("Error notes:", err));
 
-    // Listen GOALS
     const goalsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'goals'));
     const unsubGoals = onSnapshot(goalsQuery, (snapshot) => {
       const loadedGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal));

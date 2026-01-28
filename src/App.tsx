@@ -21,20 +21,21 @@ import {
   Gift,
   Download,
   Loader2,
-  Bell,
-  LogOut, // Icono para cerrar sesión
-  LogIn   // Icono para iniciar sesión
+  LogOut,
+  LogIn
 } from 'lucide-react';
 
-// --- FIREBASE IMPORTS ---
-import { initializeApp, type FirebaseOptions } from 'firebase/app';
+// --- FIREBASE IMPORTS (LIMPIOS) ---
+import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
-  GoogleAuthProvider, // Proveedor de Google
-  signInWithPopup,    // Ventana emergente para loguearse
-  signOut,            // Para salir
   onAuthStateChanged,
-  type User as FirebaseUser
+  type User as FirebaseUser,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  signInAnonymously,
+  signInWithCustomToken
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -43,17 +44,14 @@ import {
   setDoc, 
   deleteDoc, 
   onSnapshot, 
-  query,
-  type QuerySnapshot,
-  type DocumentData,
-  type FirestoreError
+  query
 } from 'firebase/firestore';
 
 // =================================================================
-// --- CONFIGURACIÓN DE FIREBASE ---
+// --- CONFIGURACIÓN DE FIREBASE (SIMPLIFICADA) ---
 // =================================================================
 
-// 1. Configuración de respaldo
+// 1. Configuración de respaldo (IMPORTANTE: Pon tus datos reales aquí)
 const firebaseConfig = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -64,19 +62,19 @@ const firebaseConfig = {
 };
 
 // 2. Selección de configuración
-let appConfig = fallbackConfig;
+let activeConfig = localConfig;
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    appConfig = JSON.parse(__firebase_config);
+    activeConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  console.warn('Usando configuración de respaldo');
+  console.warn('Usando configuración local');
 }
 
 // 3. Inicializar
-const app = initializeApp(appConfig);
+const app = initializeApp(activeConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -85,16 +83,12 @@ const db = getFirestore(app);
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-ed-v1';
 const appId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '_');
 
-// --- UTILIDAD: ABRIR GOOGLE CALENDAR DIRECTAMENTE ---
+// --- UTILIDAD: ABRIR GOOGLE CALENDAR ---
 const openGoogleCalendar = (title: string, date: string) => {
-  // Formato YYYYMMDD para Google Calendar
   const dateStr = date.replace(/-/g, '');
   const start = dateStr;
-  const end = dateStr; // Evento de todo el día
-  
+  const end = dateStr;
   const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=Evento creado desde Agenda ED`;
-  
-  // Abrir en nueva pestaña (en celular intentará abrir la App de calendario si está configurado)
   window.open(url, '_blank');
 };
 
@@ -247,11 +241,10 @@ const isSameDate = (eventDate: string, targetDate: string, category: string) => 
 
 // --- PANTALLAS ---
 
-// 0. PANTALLA DE LOGIN (NUEVA)
+// 0. PANTALLA DE LOGIN
 const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-dark-900 animate-fade-in relative overflow-hidden">
-      {/* Decoración de fondo */}
       <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-brand-500/10 to-transparent"></div>
       
       <div className="z-10 text-center">
@@ -276,8 +269,7 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
   );
 };
 
-
-// 1. MENÚ PRINCIPAL (Con Logout)
+// 1. MENÚ PRINCIPAL
 const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void, onLogout: () => void }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
@@ -351,8 +343,7 @@ const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void
         </button>
       </div>
 
-      {/* Footer con Firma y Logout */}
-      <div className="fixed bottom-6 w-full px-6 flex justify-between items-center text-slate-600">
+      <div className="fixed bottom-6 w-full px-6 flex justify-between items-center text-slate-600 left-0">
          <button onClick={onLogout} className="flex items-center gap-1 text-xs font-bold hover:text-red-400 transition-colors">
             <LogOut size={14} /> Salir
          </button>
@@ -406,12 +397,6 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
                       {/* Renderizado seguro */}
                       {cat && React.createElement(cat.icon, { size: 16 })} {cat?.label || 'General'}
                     </span>
-                    {/* INDICADOR VISUAL SI TIENE ALARMA */}
-                    {event.alarmsEnabled && (
-                      <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-md ml-auto">
-                        <Bell size={12} />
-                      </span>
-                    )}
                   </div>
                   <h3 className={`text-xl font-bold text-white break-words w-full ${event.completed ? 'line-through text-slate-400' : ''}`}>
                     {event.title}
@@ -433,7 +418,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('trabajo');
-  const [alarm, setAlarm] = useState(false); // ESTADO PARA LA ALARMA
+  const [alarm, setAlarm] = useState(false);
   const [viewState, setViewState] = useState<'calendar' | 'form'>('calendar');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
@@ -467,11 +452,10 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
       title, 
       category, 
       completed: false,
-      alarmsEnabled: alarm // GUARDAMOS SI TIENE ALARMA
+      alarmsEnabled: alarm 
     };
     onSaveEvent(newEvent);
     
-    // SI TIENE ALARMA, ABRIMOS GOOGLE CALENDAR DIRECTAMENTE
     if (alarm) {
       openGoogleCalendar(title, selectedDate);
     }
@@ -543,7 +527,6 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cat?.color}`}></div>
                         <span className={`text-sm text-white truncate ${e.completed ? 'line-through text-slate-500' : ''}`}>{e.title}</span>
                         {e.category === 'cumpleaños' && <span className="text-xs">🎂</span>}
-                        {e.alarmsEnabled && <Bell size={12} className="text-amber-400" />}
                       </div>
                       <button 
                         onClick={() => { if(confirm('¿Borrar este evento?')) onDeleteEvent(e.id) }}
@@ -573,11 +556,10 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
               ))}
             </div></div>
             
-            {/* NUEVO BOTÓN DE ALARMA - INTEGRACIÓN GOOGLE CALENDAR */}
             <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-700">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${alarm ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                  <Bell size={20} />
+                  <Loader2 size={20} className={alarm ? "" : "opacity-50"} /> 
                 </div>
                 <div>
                   <p className="font-bold text-white">Google Calendar</p>
@@ -891,44 +873,14 @@ const StickyBoardView = ({ notes, onSaveNote, onDeleteNote, onBack }: { notes: S
 // --- COMPONENTE PRINCIPAL ---
 
 export default function App() {
-  const [view, setView] = useState('login'); // Por defecto al login
+  const [view, setView] = useState('login'); 
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [notes, setNotes] = useState<StickyNote[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
 
-  // AUTH & INIT
+  // Manejo del Historial
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        setView('home'); // Si hay usuario, vamos al home
-      } else {
-        setView('login'); // Si no, al login
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogin = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Login failed", error);
-      alert("Error al iniciar sesión con Google");
-    }
-  };
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    setView('login');
-  };
-
-  // Manejo del Historial (Solo si hay usuario)
-  useEffect(() => {
-    if (!user) return;
-    
     window.history.replaceState({ view: 'home' }, '', '');
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state;
@@ -940,7 +892,7 @@ export default function App() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [user]); // Dependencia clave: user
+  }, [user]);
 
   const navigateTo = (newView: string) => {
     if (newView !== view) {
@@ -953,25 +905,39 @@ export default function App() {
     window.history.back();
   };
 
-  // DATA SYNC
+  // 1. AUTH & INIT (FIREBASE)
+  useEffect(() => {
+    const initAuth = async () => {
+      // @ts-ignore
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+         // @ts-ignore
+        await signInWithCustomToken(auth, __initial_auth_token);
+      }
+    };
+    initAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. DATA SYNC (FIREBASE)
   useEffect(() => {
     if (!user) return;
 
-    // Listen EVENTS
     const eventsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'events'));
     const unsubEvents = onSnapshot(eventsQuery, (snapshot) => {
       const loadedEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AgendaEvent));
       setEvents(loadedEvents);
     }, (err) => console.error("Error events:", err));
 
-    // Listen NOTES
     const notesQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'notes'));
     const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
       const loadedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StickyNote));
       setNotes(loadedNotes);
     }, (err) => console.error("Error notes:", err));
 
-    // Listen GOALS
     const goalsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'goals'));
     const unsubGoals = onSnapshot(goalsQuery, (snapshot) => {
       const loadedGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal));
@@ -986,7 +952,22 @@ export default function App() {
   }, [user]);
 
 
-  // HANDLERS
+  // 3. HANDLERS (FIREBASE WRITES)
+  const handleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Login failed", error);
+      alert("Error al iniciar sesión con Google");
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    setView('login');
+  };
+  
   const handleSaveEvent = async (newEvent: AgendaEvent) => {
     if (!user) return;
     await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'events', newEvent.id), newEvent);
@@ -1025,9 +1006,8 @@ export default function App() {
     await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'goals', id));
   };
 
+
   if (view === 'login') return <LoginScreen onLogin={handleLogin} />;
-  
-  // Mientras verifica el usuario, puede mostrar loader o simplemente esperar
   if (!user && view !== 'login') return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-brand-500"><Loader2 className="animate-spin" size={48} /></div>;
 
   return (

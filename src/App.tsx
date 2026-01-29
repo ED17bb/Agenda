@@ -36,7 +36,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInWithCustomToken 
+  signInWithCustomToken
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -52,7 +52,7 @@ import {
 // --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
 
-// 1. Configuración por defecto
+// 1. Configuración por defecto (PEGA TUS DATOS AQUÍ)
 const DEFAULT_CONFIG = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -265,11 +265,12 @@ const LoginScreen = ({ onLogin, error }: { onLogin: () => void, error: string | 
           Ingresar con Google
         </button>
         
+        {/* VISOR DE ERRORES MEJORADO */}
         {error && (
           <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-200 text-sm text-left flex gap-3 items-start animate-fade-in">
             <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
             <div>
-              <p className="font-bold text-red-400 mb-1">No se pudo iniciar sesión</p>
+              <p className="font-bold text-red-400 mb-1">No se pudo iniciar sesión:</p>
               <p className="opacity-90 leading-tight">{error}</p>
             </div>
           </div>
@@ -311,8 +312,8 @@ const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void
       <h1 className="text-8xl font-black text-cyan-400 mb-12 tracking-tighter drop-shadow-[0_0_15px_rgba(34,211,238,0.6)] select-none">
         {new Date().getFullYear()}
       </h1>
-      
-      {/* BOTÓN DE LOGOUT (NUEVA UBICACIÓN: ESQUINA SUPERIOR DERECHA) */}
+
+      {/* BOTÓN DE LOGOUT */}
       <div className="absolute top-6 right-6 z-20">
         <button 
           onClick={onLogout} 
@@ -989,8 +990,8 @@ export default function App() {
   const handleLogin = async () => {
     setLoginError(null);
     
-    // Verificación básica de configuración
-    if (app.options.apiKey?.startsWith("AIzaSy...") && !window.location.hostname.includes("firebaseapp")) {
+    // Verificación de seguridad
+    if (app.options.apiKey?.startsWith("AIzaSy...")) {
       setLoginError("¡Falta configuración! Edita el código y pon tus llaves reales de Firebase en la variable FALLBACK_CONFIG.");
       return;
     }
@@ -1006,6 +1007,8 @@ export default function App() {
          setLoginError("Dominio no autorizado. Agrega este dominio en Firebase Console -> Authentication -> Settings.");
       } else if (error.code === 'auth/api-key-not-valid') {
          setLoginError("API Key inválida. Revisa tu configuración en el código.");
+      } else if (error.code === 'auth/popup-closed-by-user') {
+         setLoginError("La ventana se cerró o fue bloqueada. Asegúrate de que el dominio esté autorizado en Firebase.");
       } else {
          setLoginError(error.message || "Error desconocido al iniciar sesión.");
       }

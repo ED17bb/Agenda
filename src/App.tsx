@@ -36,7 +36,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInWithCustomToken // <--- AGREGADO: Esencial para la inicialización
+  signInWithCustomToken 
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -53,7 +53,6 @@ import {
 // =================================================================
 
 // 1. Configuración por defecto
-// ⚠️ IMPORTANTE: Si ves un error de "API Key", asegúrate de reemplazar esto con tus datos reales.
 const DEFAULT_CONFIG = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -266,7 +265,6 @@ const LoginScreen = ({ onLogin, error }: { onLogin: () => void, error: string | 
           Ingresar con Google
         </button>
         
-        {/* VISOR DE ERRORES */}
         {error && (
           <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-200 text-sm text-left flex gap-3 items-start animate-fade-in">
             <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
@@ -313,6 +311,17 @@ const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void
       <h1 className="text-8xl font-black text-cyan-400 mb-12 tracking-tighter drop-shadow-[0_0_15px_rgba(34,211,238,0.6)] select-none">
         {new Date().getFullYear()}
       </h1>
+      
+      {/* BOTÓN DE LOGOUT (NUEVA UBICACIÓN: ESQUINA SUPERIOR DERECHA) */}
+      <div className="absolute top-6 right-6 z-20">
+        <button 
+          onClick={onLogout} 
+          className="p-3 bg-slate-800/80 rounded-full text-slate-400 hover:text-red-400 hover:bg-slate-700 border border-slate-700 transition-all shadow-lg backdrop-blur-sm"
+          title="Cerrar Sesión"
+        >
+          <LogOut size={20} />
+        </button>
+      </div>
 
       <div className="grid gap-6 w-full max-w-md z-10">
         {!!deferredPrompt && (
@@ -359,13 +368,6 @@ const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void
 
       <div className="fixed bottom-6 right-6 text-slate-600 font-bold text-sm tracking-widest opacity-50 hover:opacity-100 transition-opacity cursor-default">
         By ED
-      </div>
-
-      {/* Botón Logout */}
-      <div className="fixed bottom-6 left-6 text-slate-600">
-         <button onClick={onLogout} className="flex items-center gap-1 text-xs font-bold hover:text-red-400 transition-colors">
-            <LogOut size={14} /> Salir
-         </button>
       </div>
     </div>
   );

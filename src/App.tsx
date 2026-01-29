@@ -24,7 +24,8 @@ import {
   LogOut,
   LogIn,
   Bell,
-  AlertTriangle 
+  AlertTriangle,
+  User as UserIcon // Icono para invitado
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -36,7 +37,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInWithCustomToken
+  signInWithCustomToken,
+  signInAnonymously // <--- RECUPERADO: Para el modo invitado
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -52,7 +54,7 @@ import {
 // --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
 
-// 1. Configuración por defecto (PEGA TUS DATOS AQUÍ)
+// 1. Configuración por defecto
 const DEFAULT_CONFIG = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -243,31 +245,53 @@ const isSameDate = (eventDate: string, targetDate: string, category: string) => 
 
 // --- PANTALLAS ---
 
-// 0. PANTALLA DE LOGIN
-const LoginScreen = ({ onLogin, error }: { onLogin: () => void, error: string | null }) => {
+// 0. PANTALLA DE LOGIN (ACTUALIZADA)
+const LoginScreen = ({ onLogin, onLoginGuest, error }: { onLogin: () => void, onLoginGuest: () => void, error: string | null }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-dark-900 animate-fade-in relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-brand-500/10 to-transparent"></div>
       
       <div className="z-10 text-center w-full max-w-md">
-        <div className="w-32 h-32 mx-auto mb-8 rounded-3xl shadow-2xl shadow-brand-500/20 overflow-hidden">
-             <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
-        </div>
         
-        <h1 className="text-6xl font-black text-white mb-2 tracking-tighter">Agenda ED</h1>
+        {/* Título Modificado */}
+        <h1 className="text-6xl font-black text-white mb-2 tracking-tighter">AGENDA</h1>
         <p className="text-slate-400 mb-12 text-xl">Tu vida, organizada.</p>
 
-        <button 
-          onClick={onLogin}
-          className="bg-white text-slate-900 px-8 py-4 rounded-xl font-bold flex items-center gap-3 shadow-lg hover:scale-105 transition-transform active:scale-95 mx-auto w-full justify-center"
-        >
-          <LogIn className="text-brand-600" />
-          Ingresar con Google
-        </button>
+        <div className="space-y-6">
+          {/* Opción 1: Google */}
+          <div>
+            <button 
+              onClick={onLogin}
+              className="w-full bg-white text-slate-900 px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg hover:scale-105 transition-transform active:scale-95"
+            >
+              <LogIn className="text-brand-600" />
+              Ingresar con Google
+            </button>
+            <p className="mt-2 text-xs text-slate-500">Tus datos se guardan en la nube.</p>
+          </div>
+
+          <div className="flex items-center gap-4 opacity-50">
+             <div className="h-px bg-slate-600 flex-1"></div>
+             <span className="text-xs text-slate-400 font-bold uppercase">O bien</span>
+             <div className="h-px bg-slate-600 flex-1"></div>
+          </div>
+
+          {/* Opción 2: Invitado */}
+          <div>
+            <button 
+              onClick={onLoginGuest}
+              className="w-full bg-slate-800 text-slate-300 border border-slate-700 px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-3 hover:bg-slate-700 hover:text-white transition-colors active:scale-95"
+            >
+              <UserIcon className="text-slate-400" />
+              Usar sin cuenta
+            </button>
+            <p className="mt-2 text-xs text-slate-600">Tus datos se guardan solo en este dispositivo.</p>
+          </div>
+        </div>
         
-        {/* VISOR DE ERRORES MEJORADO */}
+        {/* VISOR DE ERRORES */}
         {error && (
-          <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-200 text-sm text-left flex gap-3 items-start animate-fade-in">
+          <div className="mt-8 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-200 text-sm text-left flex gap-3 items-start animate-fade-in">
             <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
             <div>
               <p className="font-bold text-red-400 mb-1">No se pudo iniciar sesión:</p>
@@ -275,8 +299,6 @@ const LoginScreen = ({ onLogin, error }: { onLogin: () => void, error: string | 
             </div>
           </div>
         )}
-        
-        <p className="mt-8 text-xs text-slate-600">Almacenamiento seguro en la nube</p>
       </div>
     </div>
   );
@@ -313,7 +335,6 @@ const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void
         {new Date().getFullYear()}
       </h1>
 
-      {/* BOTÓN DE LOGOUT */}
       <div className="absolute top-6 right-6 z-20">
         <button 
           onClick={onLogout} 
@@ -369,6 +390,12 @@ const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void
 
       <div className="fixed bottom-6 right-6 text-slate-600 font-bold text-sm tracking-widest opacity-50 hover:opacity-100 transition-opacity cursor-default">
         By ED
+      </div>
+
+      <div className="fixed bottom-6 left-6 text-slate-600">
+         <button onClick={onLogout} className="flex items-center gap-1 text-xs font-bold hover:text-red-400 transition-colors">
+            <LogOut size={14} /> Salir
+         </button>
       </div>
     </div>
   );
@@ -990,8 +1017,8 @@ export default function App() {
   const handleLogin = async () => {
     setLoginError(null);
     
-    // Verificación de seguridad
-    if (app.options.apiKey?.startsWith("AIzaSy...")) {
+    // Verificación básica de configuración
+    if (app.options.apiKey?.startsWith("AIzaSy...") && !window.location.hostname.includes("firebaseapp")) {
       setLoginError("¡Falta configuración! Edita el código y pon tus llaves reales de Firebase en la variable FALLBACK_CONFIG.");
       return;
     }
@@ -1012,6 +1039,17 @@ export default function App() {
       } else {
          setLoginError(error.message || "Error desconocido al iniciar sesión.");
       }
+    }
+  };
+
+  // NUEVO HANDLER: LOGIN INVITADO
+  const handleLoginGuest = async () => {
+    setLoginError(null);
+    try {
+      await signInAnonymously(auth);
+    } catch (error: any) {
+      console.error("Guest login failed", error);
+      setLoginError(error.message || "Error al entrar como invitado.");
     }
   };
 
@@ -1059,7 +1097,7 @@ export default function App() {
   };
 
 
-  if (view === 'login') return <LoginScreen onLogin={handleLogin} error={loginError} />;
+  if (view === 'login') return <LoginScreen onLogin={handleLogin} onLoginGuest={handleLoginGuest} error={loginError} />;
   
   // Mientras verifica el usuario, puede mostrar loader
   if (!user && view !== 'login') return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-brand-500"><Loader2 className="animate-spin" size={48} /></div>;

@@ -25,7 +25,7 @@ import {
   LogIn,
   Bell,
   AlertTriangle,
-  User as UserIcon // Icono para invitado
+  User as UserIcon
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -38,7 +38,7 @@ import {
   signInWithPopup,
   signOut,
   signInWithCustomToken,
-  signInAnonymously // <--- RECUPERADO: Para el modo invitado
+  signInAnonymously
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -54,7 +54,6 @@ import {
 // --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
 
-// 1. Configuración por defecto
 const DEFAULT_CONFIG = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
@@ -64,7 +63,6 @@ const DEFAULT_CONFIG = {
   appId: "1:923936510294:web:f0e757560790428f9b06f7"
 };
 
-// 2. Selección de configuración
 let activeConfig = DEFAULT_CONFIG;
 
 try {
@@ -77,12 +75,10 @@ try {
   console.warn('Usando configuración local por defecto');
 }
 
-// 3. Inicializar
 const app = initializeApp(activeConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 4. ID de la App sanitizado
 // @ts-ignore
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-ed-v1';
 const appId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -245,7 +241,7 @@ const isSameDate = (eventDate: string, targetDate: string, category: string) => 
 
 // --- PANTALLAS ---
 
-// 0. PANTALLA DE LOGIN (ACTUALIZADA)
+// 0. PANTALLA DE LOGIN
 const LoginScreen = ({ onLogin, onLoginGuest, error }: { onLogin: () => void, onLoginGuest: () => void, error: string | null }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-dark-900 animate-fade-in relative overflow-hidden">
@@ -253,12 +249,10 @@ const LoginScreen = ({ onLogin, onLoginGuest, error }: { onLogin: () => void, on
       
       <div className="z-10 text-center w-full max-w-md">
         
-        {/* Título Modificado */}
         <h1 className="text-6xl font-black text-white mb-2 tracking-tighter">AGENDA</h1>
         <p className="text-slate-400 mb-12 text-xl">Tu vida, organizada.</p>
 
         <div className="space-y-6">
-          {/* Opción 1: Google */}
           <div>
             <button 
               onClick={onLogin}
@@ -276,7 +270,6 @@ const LoginScreen = ({ onLogin, onLoginGuest, error }: { onLogin: () => void, on
              <div className="h-px bg-slate-600 flex-1"></div>
           </div>
 
-          {/* Opción 2: Invitado */}
           <div>
             <button 
               onClick={onLoginGuest}
@@ -289,7 +282,6 @@ const LoginScreen = ({ onLogin, onLoginGuest, error }: { onLogin: () => void, on
           </div>
         </div>
         
-        {/* VISOR DE ERRORES */}
         {error && (
           <div className="mt-8 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-200 text-sm text-left flex gap-3 items-start animate-fade-in">
             <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
@@ -638,7 +630,7 @@ const SchedulerView = ({ events, onSaveEvent, onDeleteEvent, onBack }: { events:
 };
 
 // 4. CUMPLEAÑOS
-const BirthdaysView = ({ events, onBack }: { events: AgendaEvent[], onBack: () => void }) => {
+const BirthdaysView = ({ events, onDeleteEvent, onBack }: { events: AgendaEvent[], onDeleteEvent: (id: string) => void, onBack: () => void }) => {
   const birthdays = events.filter(e => e.category === 'cumpleaños');
   const sortedBirthdays = [...birthdays].sort((a, b) => {
     const dateA = a.date.slice(5); 
@@ -667,9 +659,17 @@ const BirthdaysView = ({ events, onBack }: { events: AgendaEvent[], onBack: () =
             return (
               <React.Fragment key={bday.id}>
                 {showHeader && <h3 className="text-cyan-400 font-bold uppercase tracking-wider text-sm mt-6 mb-2 ml-1">{currentMonth}</h3>}
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center gap-4 hover:border-pink-500 transition-colors">
-                  <div className="bg-pink-500/20 p-3 rounded-full text-pink-400 font-bold text-sm min-w-[50px] text-center">{bday.date.split('-')[2]}</div>
-                  <div><h4 className="text-white font-bold text-lg">{bday.title}</h4><p className="text-slate-400 text-xs">Se repite anualmente</p></div>
+                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between hover:border-pink-500 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-pink-500/20 p-3 rounded-full text-pink-400 font-bold text-sm min-w-[50px] text-center">{bday.date.split('-')[2]}</div>
+                    <div><h4 className="text-white font-bold text-lg">{bday.title}</h4></div>
+                  </div>
+                  <button 
+                    onClick={() => { if(confirm('¿Borrar este cumpleaños?')) onDeleteEvent(bday.id) }}
+                    className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               </React.Fragment>
             );
@@ -1109,7 +1109,7 @@ export default function App() {
       {view === 'today' && <DailyView events={events} onToggleEvent={handleToggleEvent} onBack={goBack} />}
       {view === 'schedule' && <SchedulerView events={events} onSaveEvent={handleSaveEvent} onDeleteEvent={handleDeleteEvent} onBack={goBack} />}
       {view === 'board' && <StickyBoardView notes={notes} onSaveNote={handleSaveNote} onDeleteNote={handleDeleteNote} onBack={goBack} />}
-      {view === 'birthdays' && <BirthdaysView events={events} onBack={goBack} />}
+      {view === 'birthdays' && <BirthdaysView events={events} onDeleteEvent={handleDeleteEvent} onBack={goBack} />}
       {view === 'goals' && <GoalsView goals={goals} onSaveGoal={handleSaveGoal} onUpdateGoal={handleUpdateGoal} onDeleteGoal={handleDeleteGoal} onBack={goBack} />}
     </div>
   );

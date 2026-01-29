@@ -24,7 +24,7 @@ import {
   LogOut,
   LogIn,
   Bell,
-  AlertTriangle // Agregado para mensajes de error
+  AlertTriangle 
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -36,7 +36,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInWithCustomToken
+  signInWithCustomToken // <--- AGREGADO: Esencial para la inicialización
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -898,16 +898,50 @@ const StickyBoardView = ({ notes, onSaveNote, onDeleteNote, onBack }: { notes: S
 // --- COMPONENTE PRINCIPAL ---
 
 export default function App() {
-  const [view, setView] = useState('login'); // Por defecto al login
+  const [view, setView] = useState('login'); 
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [notes, setNotes] = useState<StickyNote[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  // AUTH & INIT
+  // Manejo del Historial
   useEffect(() => {
-    // Escucha cambios de autenticación
+    window.history.replaceState({ view: 'home' }, '', '');
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      if (state && state.view) {
+        setView(state.view);
+      } else {
+        setView('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [user]);
+
+  const navigateTo = (newView: string) => {
+    if (newView !== view) {
+      window.history.pushState({ view: newView }, '', '');
+      setView(newView);
+    }
+  };
+
+  const goBack = () => {
+    window.history.back();
+  };
+
+  // 1. AUTH & INIT (FIREBASE)
+  useEffect(() => {
+    const initAuth = async () => {
+      // @ts-ignore
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+         // @ts-ignore
+        await signInWithCustomToken(auth, __initial_auth_token);
+      }
+    };
+    initAuth();
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -919,6 +953,37 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // 2. DATA SYNC (FIREBASE)
+  useEffect(() => {
+    if (!user) return;
+
+    const eventsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'events'));
+    const unsubEvents = onSnapshot(eventsQuery, (snapshot) => {
+      const loadedEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AgendaEvent));
+      setEvents(loadedEvents);
+    }, (err) => console.error("Error events:", err));
+
+    const notesQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'notes'));
+    const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
+      const loadedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StickyNote));
+      setNotes(loadedNotes);
+    }, (err) => console.error("Error notes:", err));
+
+    const goalsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'goals'));
+    const unsubGoals = onSnapshot(goalsQuery, (snapshot) => {
+      const loadedGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal));
+      setGoals(loadedGoals);
+    }, (err) => console.error("Error goals:", err));
+
+    return () => {
+      unsubEvents();
+      unsubNotes();
+      unsubGoals();
+    };
+  }, [user]);
+
+
+  // 3. HANDLERS (FIREBASE WRITES)
   const handleLogin = async () => {
     setLoginError(null);
     
@@ -949,69 +1014,6 @@ export default function App() {
     await signOut(auth);
     setView('login');
   };
-
-  // Manejo del Historial (Solo si hay usuario)
-  useEffect(() => {
-    if (!user) return;
-    
-    window.history.replaceState({ view: 'home' }, '', '');
-    const handlePopState = (event: PopStateEvent) => {
-      const state = event.state;
-      if (state && state.view) {
-        setView(state.view);
-      } else {
-        setView('home');
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [user]); 
-
-  const navigateTo = (newView: string) => {
-    if (newView !== view) {
-      window.history.pushState({ view: newView }, '', '');
-      setView(newView);
-    }
-  };
-
-  const goBack = () => {
-    window.history.back();
-  };
-
-  // DATA SYNC
-  useEffect(() => {
-    if (!user) return;
-
-    // Listen EVENTS
-    const eventsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'events'));
-    const unsubEvents = onSnapshot(eventsQuery, (snapshot) => {
-      const loadedEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AgendaEvent));
-      setEvents(loadedEvents);
-    }, (err) => console.error("Error events:", err));
-
-    // Listen NOTES
-    const notesQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'notes'));
-    const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
-      const loadedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StickyNote));
-      setNotes(loadedNotes);
-    }, (err) => console.error("Error notes:", err));
-
-    // Listen GOALS
-    const goalsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'goals'));
-    const unsubGoals = onSnapshot(goalsQuery, (snapshot) => {
-      const loadedGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal));
-      setGoals(loadedGoals);
-    }, (err) => console.error("Error goals:", err));
-
-    return () => {
-      unsubEvents();
-      unsubNotes();
-      unsubGoals();
-    };
-  }, [user]);
-
-
-  // HANDLERS
   
   const handleSaveEvent = async (newEvent: AgendaEvent) => {
     if (!user) return;

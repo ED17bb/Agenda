@@ -393,8 +393,8 @@ const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void
   );
 };
 
-// 2. VISTA DEL DÍA
-const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], onToggleEvent: (id: string) => void, onBack: () => void }) => {
+// 2. VISTA DEL DÍA (Actualizada con botón de borrar)
+const DailyView = ({ events, onToggleEvent, onDeleteEvent, onBack }: { events: AgendaEvent[], onToggleEvent: (id: string) => void, onDeleteEvent: (id: string) => void, onBack: () => void }) => {
   const today = getTodayStr();
   const todaysEvents = events.filter(e => isSameDate(e.date, today, e.category));
   const [dateDisplay, setDateDisplay] = useState('');
@@ -424,20 +424,20 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
           todaysEvents.map(event => {
             const cat = CATEGORIES.find(c => c.id === event.category);
             return (
-              <button 
+              <div 
                 key={event.id} 
-                onClick={() => onToggleEvent(event.id)}
-                className={`w-full text-left bg-slate-800 p-5 rounded-2xl border-l-4 shadow-lg flex justify-between items-start animate-slide-up transition-all active:scale-95
+                className={`w-full text-left bg-slate-800 p-5 rounded-2xl border-l-4 shadow-lg flex justify-between items-start animate-slide-up transition-all
                   ${event.completed ? 'opacity-50 border-slate-600 bg-slate-800/50' : 'border-cyan-500'}
                 `}
               >
-                <div className="w-full">
+                <div 
+                  className="w-full cursor-pointer"
+                  onClick={() => onToggleEvent(event.id)}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`text-xs px-2 py-1 rounded-md text-white font-medium flex items-center gap-1 ${cat?.color || 'bg-slate-600'}`}>
-                      {/* Renderizado seguro */}
                       {cat && React.createElement(cat.icon, { size: 16 })} {cat?.label || 'General'}
                     </span>
-                    {/* INDICADOR VISUAL SI TIENE ALARMA */}
                     {event.alarmsEnabled && (
                       <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-md ml-auto">
                         <Bell size={12} />
@@ -449,8 +449,17 @@ const DailyView = ({ events, onToggleEvent, onBack }: { events: AgendaEvent[], o
                   </h3>
                   {event.category === 'cumpleaños' && <p className="text-xs text-pink-400 mt-1">🎂 Se repite cada año</p>}
                 </div>
-                {event.completed && <CheckSquare className="text-cyan-500" />}
-              </button>
+                
+                <div className="flex flex-col items-center gap-3 ml-3 border-l border-slate-700 pl-3">
+                  {event.completed && <CheckSquare className="text-cyan-500" />}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); if(confirm('¿Borrar tarea?')) onDeleteEvent(event.id); }}
+                    className="text-slate-500 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+              </div>
             );
           })
         )}
@@ -1019,7 +1028,7 @@ export default function App() {
     
     // Verificación básica de configuración
     if (app.options.apiKey?.startsWith("AIzaSy...") && !window.location.hostname.includes("firebaseapp")) {
-      setLoginError("¡Falta configuración! Edita el código y pon tus llaves reales de Firebase en la variable FALLBACK_CONFIG.");
+      setLoginError("¡Falta configuración! Edita el código y pon tus llaves reales de Firebase en la variable DEFAULT_CONFIG.");
       return;
     }
 
@@ -1106,7 +1115,7 @@ export default function App() {
     <div className="font-sans text-slate-100 bg-slate-950 min-h-screen selection:bg-brand-500/30">
       <StyleInjector />
       {view === 'home' && <MainMenu onNavigate={navigateTo} onLogout={handleLogout} />}
-      {view === 'today' && <DailyView events={events} onToggleEvent={handleToggleEvent} onBack={goBack} />}
+      {view === 'today' && <DailyView events={events} onToggleEvent={handleToggleEvent} onDeleteEvent={handleDeleteEvent} onBack={goBack} />}
       {view === 'schedule' && <SchedulerView events={events} onSaveEvent={handleSaveEvent} onDeleteEvent={handleDeleteEvent} onBack={goBack} />}
       {view === 'board' && <StickyBoardView notes={notes} onSaveNote={handleSaveNote} onDeleteNote={handleDeleteNote} onBack={goBack} />}
       {view === 'birthdays' && <BirthdaysView events={events} onDeleteEvent={handleDeleteEvent} onBack={goBack} />}

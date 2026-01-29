@@ -23,7 +23,8 @@ import {
   Loader2,
   LogOut,
   LogIn,
-  Bell
+  Bell,
+  AlertTriangle // Agregado para mensajes de error
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -35,7 +36,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInWithCustomToken // <--- AGREGADO: Esencial para evitar el ReferenceError
+  signInWithCustomToken
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -51,8 +52,9 @@ import {
 // --- CONFIGURACIÓN DE FIREBASE ---
 // =================================================================
 
-// 1. Configuración de respaldo (REEMPLAZA ESTO CON TUS DATOS REALES)
-const FALLBACK_CONFIG = {
+// 1. Configuración por defecto
+// ⚠️ IMPORTANTE: Si ves un error de "API Key", asegúrate de reemplazar esto con tus datos reales.
+const DEFAULT_CONFIG = {
   apiKey: "AIzaSyAN20gGmcwzYnjOaF7IBEHV6802BCQl4Ac",
   authDomain: "agenda-ed.firebaseapp.com",
   projectId: "agenda-ed",
@@ -62,20 +64,20 @@ const FALLBACK_CONFIG = {
 };
 
 // 2. Selección de configuración
-let finalConfig = FALLBACK_CONFIG;
+let activeConfig = DEFAULT_CONFIG;
 
 try {
   // @ts-ignore
   if (typeof __firebase_config !== 'undefined') {
     // @ts-ignore
-    finalConfig = JSON.parse(__firebase_config);
+    activeConfig = JSON.parse(__firebase_config);
   }
 } catch (e) {
-  // Ignorar error y usar la local
+  console.warn('Usando configuración local por defecto');
 }
 
-// 3. Inicializar Firebase
-const app = initializeApp(finalConfig);
+// 3. Inicializar
+const app = initializeApp(activeConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -243,12 +245,12 @@ const isSameDate = (eventDate: string, targetDate: string, category: string) => 
 // --- PANTALLAS ---
 
 // 0. PANTALLA DE LOGIN
-const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
+const LoginScreen = ({ onLogin, error }: { onLogin: () => void, error: string | null }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-dark-900 animate-fade-in relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-brand-500/10 to-transparent"></div>
       
-      <div className="z-10 text-center">
+      <div className="z-10 text-center w-full max-w-md">
         <div className="w-32 h-32 mx-auto mb-8 rounded-3xl shadow-2xl shadow-brand-500/20 overflow-hidden">
              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
         </div>
@@ -258,11 +260,22 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
 
         <button 
           onClick={onLogin}
-          className="bg-white text-slate-900 px-8 py-4 rounded-xl font-bold flex items-center gap-3 shadow-lg hover:scale-105 transition-transform active:scale-95 mx-auto"
+          className="bg-white text-slate-900 px-8 py-4 rounded-xl font-bold flex items-center gap-3 shadow-lg hover:scale-105 transition-transform active:scale-95 mx-auto w-full justify-center"
         >
           <LogIn className="text-brand-600" />
           Ingresar con Google
         </button>
+        
+        {/* VISOR DE ERRORES */}
+        {error && (
+          <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-200 text-sm text-left flex gap-3 items-start animate-fade-in">
+            <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="font-bold text-red-400 mb-1">No se pudo iniciar sesión</p>
+              <p className="opacity-90 leading-tight">{error}</p>
+            </div>
+          </div>
+        )}
         
         <p className="mt-8 text-xs text-slate-600">Almacenamiento seguro en la nube</p>
       </div>
@@ -348,6 +361,7 @@ const MainMenu = ({ onNavigate, onLogout }: { onNavigate: (view: string) => void
         By ED
       </div>
 
+      {/* Botón Logout */}
       <div className="fixed bottom-6 left-6 text-slate-600">
          <button onClick={onLogout} className="flex items-center gap-1 text-xs font-bold hover:text-red-400 transition-colors">
             <LogOut size={14} /> Salir
@@ -884,14 +898,62 @@ const StickyBoardView = ({ notes, onSaveNote, onDeleteNote, onBack }: { notes: S
 // --- COMPONENTE PRINCIPAL ---
 
 export default function App() {
-  const [view, setView] = useState('login'); 
+  const [view, setView] = useState('login'); // Por defecto al login
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [notes, setNotes] = useState<StickyNote[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
-  // Manejo del Historial
+  // AUTH & INIT
   useEffect(() => {
+    // Escucha cambios de autenticación
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        setView('home'); // REDIRECCIÓN CRÍTICA AL ENTRAR
+      } else {
+        setView('login');
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    setLoginError(null);
+    
+    // Verificación básica de configuración
+    if (app.options.apiKey?.startsWith("AIzaSy...") && !window.location.hostname.includes("firebaseapp")) {
+      setLoginError("¡Falta configuración! Edita el código y pon tus llaves reales de Firebase en la variable FALLBACK_CONFIG.");
+      return;
+    }
+
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      // La redirección a 'home' la maneja onAuthStateChanged automáticamente
+    } catch (error: any) {
+      console.error("Login failed", error);
+      // Mensajes de error amigables
+      if (error.code === 'auth/unauthorized-domain') {
+         setLoginError("Dominio no autorizado. Agrega este dominio en Firebase Console -> Authentication -> Settings.");
+      } else if (error.code === 'auth/api-key-not-valid') {
+         setLoginError("API Key inválida. Revisa tu configuración en el código.");
+      } else {
+         setLoginError(error.message || "Error desconocido al iniciar sesión.");
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    setView('login');
+  };
+
+  // Manejo del Historial (Solo si hay usuario)
+  useEffect(() => {
+    if (!user) return;
+    
     window.history.replaceState({ view: 'home' }, '', '');
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state;
@@ -903,7 +965,7 @@ export default function App() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [user]);
+  }, [user]); 
 
   const navigateTo = (newView: string) => {
     if (newView !== view) {
@@ -916,39 +978,25 @@ export default function App() {
     window.history.back();
   };
 
-  // 1. AUTH & INIT (FIREBASE)
-  useEffect(() => {
-    const initAuth = async () => {
-      // @ts-ignore
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-         // @ts-ignore
-        await signInWithCustomToken(auth, __initial_auth_token);
-      }
-    };
-    initAuth();
-
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // 2. DATA SYNC (FIREBASE)
+  // DATA SYNC
   useEffect(() => {
     if (!user) return;
 
+    // Listen EVENTS
     const eventsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'events'));
     const unsubEvents = onSnapshot(eventsQuery, (snapshot) => {
       const loadedEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AgendaEvent));
       setEvents(loadedEvents);
     }, (err) => console.error("Error events:", err));
 
+    // Listen NOTES
     const notesQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'notes'));
     const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
       const loadedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StickyNote));
       setNotes(loadedNotes);
     }, (err) => console.error("Error notes:", err));
 
+    // Listen GOALS
     const goalsQuery = query(collection(db, 'artifacts', appId, 'users', user.uid, 'goals'));
     const unsubGoals = onSnapshot(goalsQuery, (snapshot) => {
       const loadedGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal));
@@ -963,21 +1011,7 @@ export default function App() {
   }, [user]);
 
 
-  // 3. HANDLERS (FIREBASE WRITES)
-  const handleLogin = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Login failed", error);
-      alert("Error al iniciar sesión con Google");
-    }
-  };
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    setView('login');
-  };
+  // HANDLERS
   
   const handleSaveEvent = async (newEvent: AgendaEvent) => {
     if (!user) return;
@@ -1018,7 +1052,9 @@ export default function App() {
   };
 
 
-  if (view === 'login') return <LoginScreen onLogin={handleLogin} />;
+  if (view === 'login') return <LoginScreen onLogin={handleLogin} error={loginError} />;
+  
+  // Mientras verifica el usuario, puede mostrar loader
   if (!user && view !== 'login') return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-brand-500"><Loader2 className="animate-spin" size={48} /></div>;
 
   return (
